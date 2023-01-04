@@ -12,8 +12,4 @@ pub mod sta;
 use socket_handle::SocketHandle;
 pub type Result<T = ()> = std::result::Result<T, error::Error>;
 
-#[cfg(feature = "logging")]
 use log::{debug, error, info, warn};
-
-#[cfg(not(feature = "logging"))]
-mod mock_log;
