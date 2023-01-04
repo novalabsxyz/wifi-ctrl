@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::net::UnixDatagram;

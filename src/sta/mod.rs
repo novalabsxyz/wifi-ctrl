@@ -81,17 +81,10 @@ impl WifiStation {
                         )
                         .await?
                     }
-                    None => {
-                        return Err(anyhow!(
-                            "Unexpected close of WiFi Sta unsolicited event channel"
-                        )
-                        .into())
-                    }
+                    None => return Err(error::Error::WifiStationEventChannelClosed),
                 },
                 EventOrRequest::Request(request) => match request {
-                    Some(Request::Shutdown) => {
-                        return Ok(());
-                    }
+                    Some(Request::Shutdown) => return Ok(()),
                     Some(request) => {
                         Self::handle_request(
                             &mut socket_handle,
@@ -101,9 +94,7 @@ impl WifiStation {
                         )
                         .await?;
                     }
-                    None => {
-                        return Err(anyhow!("Unexpected close of WiFi Sta requests channel").into())
-                    }
+                    None => return Err(error::Error::WifiStationRequestChannelClosed),
                 },
             }
         }

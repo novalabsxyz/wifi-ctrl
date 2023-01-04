@@ -68,14 +68,12 @@ impl WifiAp {
                         Self::handle_event(&mut socket_handle, &self.broadcast_sender, event)
                             .await?
                     }
-                    None => return Err(anyhow!("Unexpected close of WiFi AP event channel").into()),
+                    None => return Err(error::Error::WifiApEventChannelClosed),
                 },
                 EventOrRequest::Request(request) => match request {
                     Some(Request::Shutdown) => return Ok(()),
                     Some(request) => Self::handle_request(&mut socket_handle, request).await?,
-                    None => {
-                        return Err(anyhow!("Unexpected close of WiFi AP requests channel").into())
-                    }
+                    None => return Err(error::Error::WifiApRequestChannelClosed),
                 },
             }
         }
