@@ -1,21 +1,21 @@
 use super::*;
 
-pub struct EventSocket {
+pub(crate) struct EventSocket {
     socket_handle: SocketHandle<256>,
     /// Sends messages to client
     sender: mpsc::Sender<Event>,
 }
 
 #[derive(Debug)]
-pub enum Event {
+pub(crate) enum Event {
     ApStaConnected(String),
     ApStaDisconnected(String),
 }
 
-pub type EventReceiver = mpsc::Receiver<Event>;
+pub(crate) type EventReceiver = mpsc::Receiver<Event>;
 
 impl EventSocket {
-    pub async fn new() -> Result<(EventReceiver, Self)> {
+    pub(crate) async fn new() -> Result<(EventReceiver, Self)> {
         let socket_handle =
             SocketHandle::open(PATH_DEFAULT_SERVER, "mapper_hostapd_async.sock").await?;
 
@@ -30,7 +30,15 @@ impl EventSocket {
         ))
     }
 
-    pub async fn run(mut self) -> Result {
+    async fn send_event(&self, event: Event) -> Result {
+        self.sender
+            .send(event)
+            .await
+            .map_err(|_| error::Error::WifiApEventChannelClosed)?;
+        Ok(())
+    }
+
+    pub(crate) async fn run(mut self) -> Result {
         let mut attach = self.socket_handle.command(b"ATTACH").await;
         while attach.is_err() {
             tokio::time::sleep(tokio::time::Duration::from_millis(250)).await;
@@ -57,14 +65,12 @@ impl EventSocket {
                     if let Some(n) = data_str.find("AP-STA-DISCONNECTED") {
                         let index = n + "AP-STA-DISCONNECTED".len();
                         let mac = &data_str[index..];
-                        self.sender
-                            .send(Event::ApStaDisconnected(mac.to_string()))
+                        self.send_event(Event::ApStaDisconnected(mac.to_string()))
                             .await?;
                     } else if let Some(n) = data_str.find("AP-STA-CONNECTED") {
                         let index = n + "AP-STA-CONNECTED".len();
                         let mac = &data_str[index..];
-                        self.sender
-                            .send(Event::ApStaConnected(mac.to_string()))
+                        self.send_event(Event::ApStaConnected(mac.to_string()))
                             .await?;
                     }
                 }

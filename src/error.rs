@@ -21,14 +21,14 @@ pub enum Error {
     Recv(#[from] oneshot::error::RecvError),
     #[error("unsolicited socket io error: {0}")]
     UnsolicitedIoError(std::io::Error),
-    #[error("wifi station request: {0}")]
-    WifiStationRequest(#[from] mpsc::error::SendError<sta::Request>),
-    #[error("wifi station event msg: {0}")]
-    WifiStationEventMsg(#[from] mpsc::error::SendError<sta::Event>),
-    #[error("wifi access point request: {0}")]
-    WifiApRequest(#[from] mpsc::error::SendError<ap::Request>),
-    #[error("wifi access point event msg: {0}")]
-    WifiApEventMsg(#[from] mpsc::error::SendError<ap::Event>),
+    #[error("wifi_ctrl::station internal request channel unexpectedly closed")]
+    WifiStationRequestChannelClosed,
+    #[error("wifi_ctrl::station internal event channel unexpectedly closed")]
+    WifiStationEventChannelClosed,
+    #[error("wifi_ctrl::ap internal request channel unexpectedly closed")]
+    WifiApRequestChannelClosed,
+    #[error("wifi_ctrl::ap internal event channel unexpectedly closed")]
+    WifiApEventChannelClosed,
     #[error("wifi ap broadcast: {0}")]
     WifiApBroadcast(#[from] broadcast::error::SendError<ap::Broadcast>),
     #[error("wifi::sta broadcast: {0}")]
