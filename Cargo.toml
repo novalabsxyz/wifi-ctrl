@@ -1,0 +1,23 @@
+[package]
+name = "wifi-ctrl"
+version = "0.1.0"
+edition = "2021"
+authors = ["Louis Thiery <thiery.louis@gmail.com>"]
+description = "Tokio-based runtimes for communicating with hostapd and wpa-supplicant"
+license = "Apache-2.0"
+repository = "https://github.com/novalabsxyz/wifi-ctrl"
+readme = "README.md"
+keywords = ["hostapd", "wpa-supplicant", "wpa-cli", "wifi"]
+
+[dependencies]
+anyhow = "1"
+config = {version="0", default-features = false, features = ["ini"]}
+serde =  {version = "1", features = ["derive"] }
+thiserror = "1"
+tempfile = "3"
+tokio = { version = "1", default-features = false, features = ["net",  "sync", "macros", "time"] }
+log = { version = "0", optional = true }
+
+[features]
+default = ["logging"]
+logging = ["log"]
