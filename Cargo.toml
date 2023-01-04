@@ -10,11 +10,9 @@ readme = "README.md"
 keywords = ["hostapd", "wpa-supplicant", "wpa-cli", "wifi"]
 
 [dependencies]
-anyhow = "1"
 config = {version="0", default-features = false, features = ["ini"]}
 serde =  {version = "1", features = ["derive"] }
 thiserror = "1"
 tempfile = "3"
 tokio = { version = "1", default-features = false, features = ["net",  "sync", "macros", "time"] }
 log = { version = "0" }
-

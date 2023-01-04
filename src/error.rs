@@ -37,6 +37,4 @@ pub enum Error {
     WifiSelect,
     #[error("timeout opening socket {0}")]
     TimeoutOpeningSocket(String),
-    #[error("{0}")]
-    Anyhow(#[from] anyhow::Error),
 }

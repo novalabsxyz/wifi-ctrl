@@ -21,7 +21,7 @@ impl RequestClient {
         self.sender
             .send(request)
             .await
-            .map_err(|_| anyhow!("wifi_ctrl::ap internal mpsc channel unexpectedly closed"))?;
+            .map_err(|_| error::Error::WifiApRequestChannelClosed)?;
         Ok(())
     }
 
