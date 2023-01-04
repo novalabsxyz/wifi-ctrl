@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use super::*;
 
 mod types;
@@ -11,7 +10,7 @@ mod setup;
 pub use setup::*;
 
 mod event_socket;
-pub use event_socket::*;
+use event_socket::*;
 
 const PATH_DEFAULT_SERVER: &str = "/var/run/hostapd/wlan1";
 
@@ -48,7 +47,7 @@ impl WifiAp {
         )
     }
 
-    pub async fn run_internal(
+    async fn run_internal(
         mut self,
         mut event_receiver: EventReceiver,
         mut socket_handle: SocketHandle<2048>,
@@ -82,7 +81,7 @@ impl WifiAp {
         }
     }
 
-    pub async fn handle_event<const N: usize>(
+    async fn handle_event<const N: usize>(
         _socket_handle: &mut SocketHandle<N>,
         broadcast_sender: &broadcast::Sender<Broadcast>,
         event_msg: Event,
@@ -102,7 +101,7 @@ impl WifiAp {
         Ok(())
     }
 
-    pub async fn handle_request<const N: usize>(
+    async fn handle_request<const N: usize>(
         socket_handle: &mut SocketHandle<N>,
         request: Request,
     ) -> Result {

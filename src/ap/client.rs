@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Debug)]
-pub enum Request {
+pub(crate) enum Request {
     Status(oneshot::Sender<Status>),
     Shutdown,
 }
@@ -13,14 +13,26 @@ pub struct RequestClient {
 }
 
 impl RequestClient {
-    pub fn new(sender: mpsc::Sender<Request>) -> RequestClient {
+    pub(crate) fn new(sender: mpsc::Sender<Request>) -> RequestClient {
         RequestClient { sender }
+    }
+
+    async fn send_request(&self, request: Request) -> Result {
+        self.sender
+            .send(request)
+            .await
+            .map_err(|_| anyhow!("wifi_ctrl::ap internal mpsc channel unexpectedly closed"))?;
+        Ok(())
     }
 
     pub async fn get_status(&self) -> Result<Status> {
         let (response, request) = oneshot::channel();
-        self.sender.send(Request::Status(response)).await?;
+        self.send_request(Request::Status(response)).await?;
         Ok(request.await?)
+    }
+
+    pub async fn shutdown(&self) -> Result {
+        self.send_request(Request::Shutdown).await
     }
 }
 

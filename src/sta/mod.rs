@@ -10,7 +10,7 @@ mod setup;
 pub use setup::*;
 
 mod event_socket;
-pub use event_socket::*;
+use event_socket::*;
 
 const PATH_DEFAULT_SERVER: &str = "/var/run/wpa_supplicant/wlan2";
 
@@ -45,7 +45,7 @@ impl WifiStation {
         )
     }
 
-    pub async fn run_internal(
+    async fn run_internal(
         mut self,
         mut unsolicited_receiver: EventReceiver,
         mut socket_handle: SocketHandle<10240>,
@@ -109,7 +109,7 @@ impl WifiStation {
         }
     }
 
-    pub async fn handle_event<const N: usize>(
+    async fn handle_event<const N: usize>(
         socket_handle: &mut SocketHandle<N>,
         event: Event,
         scan_requests: &mut Vec<oneshot::Sender<Arc<Vec<ScanResult>>>>,
@@ -162,7 +162,7 @@ impl WifiStation {
         Ok(())
     }
 
-    pub async fn handle_request<const N: usize>(
+    async fn handle_request<const N: usize>(
         socket_handle: &mut SocketHandle<N>,
         request: Request,
         scan_requests: &mut Vec<oneshot::Sender<Arc<Vec<ScanResult>>>>,

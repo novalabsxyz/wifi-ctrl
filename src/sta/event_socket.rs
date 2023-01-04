@@ -1,13 +1,13 @@
 use super::*;
 
-pub struct EventSocket {
+pub(crate) struct EventSocket {
     socket_handle: SocketHandle<256>,
     /// Sends messages to client
     sender: mpsc::Sender<Event>,
 }
 
 #[derive(Debug)]
-pub enum Event {
+pub(crate) enum Event {
     ScanComplete,
     Connected,
     Disconnected,
@@ -15,10 +15,10 @@ pub enum Event {
     WrongPsk,
 }
 
-pub type EventReceiver = mpsc::Receiver<Event>;
+pub(crate) type EventReceiver = mpsc::Receiver<Event>;
 
 impl EventSocket {
-    pub async fn new() -> Result<(EventReceiver, Self)> {
+    pub(crate) async fn new() -> Result<(EventReceiver, Self)> {
         let socket_handle =
             SocketHandle::open(PATH_DEFAULT_SERVER, "mapper_wpa_ctrl_async.sock").await?;
         let (sender, receiver) = mpsc::channel(32);
@@ -31,7 +31,15 @@ impl EventSocket {
         ))
     }
 
-    pub async fn run(mut self) -> Result {
+    async fn send_event(&self, event: Event) -> Result {
+        self.sender
+            .send(event)
+            .await
+            .map_err(|_| error::Error::WifiStationEventChannelClosed)?;
+        Ok(())
+    }
+
+    pub(crate) async fn run(mut self) -> Result {
         info!("wpa_ctrl attempting attach");
 
         self.socket_handle.socket.send(b"ATTACH").await?;
@@ -46,21 +54,21 @@ impl EventSocket {
                     let data_str = std::str::from_utf8(&self.socket_handle.buffer[..n])?.trim_end();
                     debug!("wpa_ctrl event: {data_str}");
                     if data_str.ends_with("CTRL-EVENT-SCAN-RESULTS") {
-                        self.sender.send(Event::ScanComplete).await?;
+                        self.send_event(Event::ScanComplete).await?;
                     }
                     if data_str.contains("CTRL-EVENT-CONNECTED") {
-                        self.sender.send(Event::Connected).await?;
+                        self.send_event(Event::Connected).await?;
                     }
                     if data_str.contains("CTRL-EVENT-DISCONNECTED") {
-                        self.sender.send(Event::Disconnected).await?;
+                        self.send_event(Event::Disconnected).await?;
                     }
                     if data_str.contains("CTRL-EVENT-NETWORK-NOT-FOUND") {
-                        self.sender.send(Event::NetworkNotFound).await?;
+                        self.send_event(Event::NetworkNotFound).await?;
                     }
                     if data_str.contains("CTRL-EVENT-SSID-TEMP-DISABLED")
                         && data_str.contains("reason=WRONG_KEY")
                     {
-                        self.sender.send(Event::WrongPsk).await?;
+                        self.send_event(Event::WrongPsk).await?;
                     }
                 }
                 Err(e) => {
