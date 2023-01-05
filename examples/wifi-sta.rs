@@ -1,5 +1,5 @@
 use env_logger::Env;
-use log::{info, error};
+use log::{error, info};
 use wifi_ctrl::{sta, Result};
 
 #[tokio::main]
@@ -26,7 +26,7 @@ async fn main() -> Result {
     Ok(())
 }
 
-async fn app(requester: sta::RequestClient, mut broadcast: sta::BroadcastReceiver ) -> Result {
+async fn app(requester: sta::RequestClient, mut broadcast: sta::BroadcastReceiver) -> Result {
     loop {
         while let Ok(broadcast) = broadcast.recv().await {
             if let sta::Broadcast::Ready = broadcast {

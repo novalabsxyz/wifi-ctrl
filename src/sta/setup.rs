@@ -16,9 +16,7 @@ pub struct WifiSetupGeneric<const C: usize = 32, const B: usize = 32> {
 }
 
 impl<const C: usize, const B: usize> WifiSetupGeneric<C, B> {
-    pub fn new() -> Result<Self>
-
-    {
+    pub fn new() -> Result<Self> {
         // setup the channel for client requests
         let (sender, request_receiver) = mpsc::channel(C);
         let request_client = RequestClient::new(sender);

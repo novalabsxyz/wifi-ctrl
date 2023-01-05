@@ -33,7 +33,7 @@ impl WifiAp {
             resp = async move {
                 // We start up a separate socket for receiving the "unexpected" events that
                 // gets forwarded to us via the event_receiver
-                let (event_receiver, event_socket) = EventSocket::new().await?;
+                let (event_receiver, event_socket) = EventSocket::new(&self.socket_path).await?;
                 let socket_handle = SocketHandle::open(&self.socket_path, "mapper_hostapd_sync.sock").await?;
                 self.broadcast_sender.send(Broadcast::Ready)?;
                 tokio::select!(

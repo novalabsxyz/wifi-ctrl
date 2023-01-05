@@ -12,7 +12,6 @@
 )]
 #![doc(test(attr(allow(unused_variables), deny(warnings))))]
 
-
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc, oneshot};
@@ -24,9 +23,7 @@ pub mod error;
 /// WiFi Station (network client) runtime and types
 pub mod sta;
 
-
 pub(crate) mod socket_handle;
-
 
 use socket_handle::SocketHandle;
 pub type Result<T = ()> = std::result::Result<T, error::Error>;

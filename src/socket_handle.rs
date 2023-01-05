@@ -1,6 +1,6 @@
 use super::*;
-use tokio::net::UnixDatagram;
 use std::io::ErrorKind;
+use tokio::net::UnixDatagram;
 
 pub struct SocketHandle<const N: usize> {
     #[allow(unused)]
