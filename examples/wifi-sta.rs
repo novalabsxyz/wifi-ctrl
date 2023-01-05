@@ -27,25 +27,30 @@ async fn main() -> Result {
 }
 
 async fn app(requester: sta::RequestClient, mut broadcast: sta::BroadcastReceiver) -> Result {
-    loop {
-        while let Ok(broadcast) = broadcast.recv().await {
-            if let sta::Broadcast::Ready = broadcast {
-                break;
-            } else {
-                info!("Received unexpected broadcast: {:?}", broadcast);
-            }
-        }
-        info!("Requesting scan");
-        let scan = requester.get_scan().await?;
-        info!("Scan complete");
-        for scan in scan.iter() {
-            info!("{:?}", scan);
-        }
-
-        let networks = requester.get_networks().await?;
-        info!("Known networks");
-        for networks in networks.iter() {
-            info!("{:?}", networks);
+    // Block until runtime has a confirmed socket connection.
+    // This isn't really essential, but it makes a shutdown happen more gracefully on failures.
+    while let Ok(broadcast) = broadcast.recv().await {
+        if let sta::Broadcast::Ready = broadcast {
+            break;
+        } else {
+            info!("Received unexpected broadcast: {:?}", broadcast);
         }
     }
+
+    info!("Requesting scan");
+    let scan = requester.get_scan().await?;
+    info!("Scan complete");
+    for scan in scan.iter() {
+        info!("   {:?}", scan);
+    }
+
+    let networks = requester.get_networks().await?;
+    info!("Known networks");
+    for networks in networks.iter() {
+        info!("   {:?}", networks);
+    }
+    info!("Shutting down");
+    requester.shutdown().await?;
+    Ok(())
+
 }
