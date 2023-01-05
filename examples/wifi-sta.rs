@@ -52,5 +52,4 @@ async fn app(requester: sta::RequestClient, mut broadcast: sta::BroadcastReceive
     info!("Shutting down");
     requester.shutdown().await?;
     Ok(())
-
 }
