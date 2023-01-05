@@ -37,12 +37,12 @@ impl RequestClient {
 }
 
 #[derive(Debug, Clone)]
+/// Broadcast events, such as a client disconnecting or connecting, may happen at any time.
 pub enum Broadcast {
     Ready,
     Connected(String),
     Disconnected(String),
 }
 
-/// Channel for broadcasting events. Subscribing to this channel is equivalent to
-/// "wpa_ctrl_attach". Can be temporarily silenced using broadcast::Receiver's unsubscribe
+/// Channel for broadcasting events.
 pub type BroadcastReceiver = broadcast::Receiver<Broadcast>;

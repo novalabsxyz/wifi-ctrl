@@ -15,9 +15,11 @@ pub(crate) enum Event {
 pub(crate) type EventReceiver = mpsc::Receiver<Event>;
 
 impl EventSocket {
-    pub(crate) async fn new() -> Result<(EventReceiver, Self)> {
-        let socket_handle =
-            SocketHandle::open(PATH_DEFAULT_SERVER, "mapper_hostapd_async.sock").await?;
+    pub(crate) async fn new<P>(socket: P) -> Result<(EventReceiver, Self)>
+    where
+        P: AsRef<std::path::Path> + std::fmt::Debug,
+    {
+        let socket_handle = SocketHandle::open(socket, "mapper_hostapd_async.sock").await?;
 
         // setup the channel for client requests
         let (sender, receiver) = mpsc::channel(32);

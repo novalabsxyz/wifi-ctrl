@@ -37,4 +37,6 @@ pub enum Error {
     WifiSelect,
     #[error("timeout opening socket {0}")]
     TimeoutOpeningSocket(String),
+    #[error("permission denied opening socket {0}")]
+    PermissionDeniedOpeningSocket(String),
 }

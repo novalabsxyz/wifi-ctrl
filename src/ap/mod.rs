@@ -17,7 +17,7 @@ const PATH_DEFAULT_SERVER: &str = "/var/run/hostapd/wlan1";
 /// Instance that runs the Wifi process
 pub struct WifiAp {
     /// Path to the socket
-    socket_path: String,
+    socket_path: std::path::PathBuf,
     /// Channel for receiving requests
     request_receiver: mpsc::Receiver<Request>,
     #[allow(unused)]
@@ -33,8 +33,8 @@ impl WifiAp {
             resp = async move {
                 // We start up a separate socket for receiving the "unexpected" events that
                 // gets forwarded to us via the event_receiver
-                let (event_receiver, event_socket) = EventSocket::new().await?;
-                let socket_handle = SocketHandle::open(PATH_DEFAULT_SERVER, "mapper_hostapd_sync.sock").await?;
+                let (event_receiver, event_socket) = EventSocket::new(&self.socket_path).await?;
+                let socket_handle = SocketHandle::open(&self.socket_path, "mapper_hostapd_sync.sock").await?;
                 self.broadcast_sender.send(Broadcast::Ready)?;
                 tokio::select!(
                     resp = event_socket.run() => resp,

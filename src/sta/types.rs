@@ -99,7 +99,7 @@ impl NetworkResult {
 
 pub type Status = HashMap<String, String>;
 
-pub fn parse_status(response: &str) -> Result<Status> {
+pub(crate) fn parse_status(response: &str) -> Result<Status> {
     use config::{Config, File, FileFormat};
     let config = Config::builder()
         .add_source(File::from_str(response, FileFormat::Ini))

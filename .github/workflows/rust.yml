@@ -36,9 +36,6 @@ jobs:
           args: --all-features -- -Dclippy::all
 
       - name: Test
-        uses: actions-rs/tarpaulin@v0.1
+        uses: actions-rs/cargo@v1
         with:
-          args: "--all-features"
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v1.2.1
+          command: test

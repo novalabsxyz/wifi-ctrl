@@ -17,7 +17,7 @@ const PATH_DEFAULT_SERVER: &str = "/var/run/wpa_supplicant/wlan2";
 /// Instance that runs the Wifi process
 pub struct WifiStation {
     /// Path to the socket
-    socket_path: String,
+    socket_path: std::path::PathBuf,
     /// Channel for receiving requests
     request_receiver: mpsc::Receiver<Request>,
     #[allow(unused)]
@@ -35,7 +35,7 @@ impl WifiStation {
                     SocketHandle::open(&self.socket_path, "mapper_wpa_ctrl_sync.sock").await?;
                 // We start up a separate socket for receiving the "unexpected" events that
                 // gets forwarded to us via the unsolicited_receiver
-                let (unsolicited_receiver, unsolicited) = EventSocket::new().await?;
+                let (unsolicited_receiver, unsolicited) = EventSocket::new(&self.socket_path).await?;
                 self.broadcast_sender.send(Broadcast::Ready)?;
                 tokio::select!(
                     resp = unsolicited.run() => resp,
