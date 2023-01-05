@@ -1,4 +1,6 @@
 use super::*;
+use tokio::net::UnixDatagram;
+use std::io::ErrorKind;
 
 pub struct SocketHandle<const N: usize> {
     #[allow(unused)]
@@ -9,6 +11,8 @@ pub struct SocketHandle<const N: usize> {
     pub buffer: [u8; N],
 }
 
+const RETRY_MINUTES: u64 = 5;
+
 impl<const N: usize> SocketHandle<N> {
     pub async fn open<P>(path: P, label: &str) -> Result<Self>
     where
@@ -17,18 +21,32 @@ impl<const N: usize> SocketHandle<N> {
         let tmp_dir = tempfile::tempdir()?;
         let connect_from = tmp_dir.path().join(label);
         let socket = UnixDatagram::bind(connect_from)?;
-        let socket_debug = format!("{path:?}");
+        let socket_debug = &format!("{path:?}");
         // loop around waiting for the socket for up to 5 minutes
         let socket = tokio::select!(
             resp = async move  {
-                while socket.connect(&path).is_err() {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                }
-                Ok(socket)
+                let mut loop_count = 0;
+                let s: Result<UnixDatagram> = loop {
+                    match socket.connect(&path) {
+                        Ok(()) => break Ok(socket),
+                        Err(e) => {
+                            // if socket is there but permission denied, fail fast
+                            if e.kind() == ErrorKind::PermissionDenied {
+                                break Err(error::Error::PermissionDeniedOpeningSocket(socket_debug.to_string()));
+                            }
+                            if loop_count % 60 == 0 {
+                                info!("Failed to connect to {socket_debug}, retrying for {} more minutes", RETRY_MINUTES-(loop_count+1)/60);
+                            }
+                            loop_count+=1;
+                            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                        }
+                    }
+                };
+                s
             } => resp,
             _ = async move {
-                tokio::time::sleep(tokio::time::Duration::from_secs(60*5)).await;
-            } => Err(error::Error::TimeoutOpeningSocket(socket_debug)),
+                tokio::time::sleep(tokio::time::Duration::from_secs(60*RETRY_MINUTES)).await;
+            } => Err(error::Error::TimeoutOpeningSocket(socket_debug.to_string())),
         )?;
 
         Ok(Self {

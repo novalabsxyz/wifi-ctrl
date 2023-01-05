@@ -4,6 +4,7 @@ use super::*;
 pub type ScanResults = Arc<Vec<ScanResult>>;
 
 #[derive(Debug)]
+/// Result from selecting a network, including a success or a specific failure (eg: incorect psk)
 pub enum SelectResult {
     Success,
     WrongPsk,
@@ -40,7 +41,7 @@ pub(crate) enum Request {
 }
 
 #[derive(Debug)]
-pub enum SetNetwork {
+pub(crate) enum SetNetwork {
     Ssid(String),
     Psk(String),
 }
@@ -124,6 +125,7 @@ impl RequestClient {
     }
 }
 
+/// Broadcast events are unexpected, such as losing connection to the host network.
 #[derive(Debug, Clone)]
 pub enum Broadcast {
     Connected,

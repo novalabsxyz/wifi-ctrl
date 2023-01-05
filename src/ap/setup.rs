@@ -1,6 +1,11 @@
 use super::*;
 
-pub struct WifiSetup<const C: usize = 32, const B: usize = 32> {
+/// A convenient default type for setting up the WiFiAp process.
+pub type WifiSetup = WifiSetupGeneric<32, 32>;
+
+/// The generic WifiSetup struct which has generic constant parameters for adjusting queue size.
+/// WiFiSetup type is provided for convenience.
+pub struct WifiSetupGeneric<const C: usize = 32, const B: usize = 32> {
     /// Struct for handling runtime process
     wifi: WifiAp,
     /// Client for making requests
@@ -10,7 +15,7 @@ pub struct WifiSetup<const C: usize = 32, const B: usize = 32> {
     broadcast_receiver: BroadcastReceiver,
 }
 
-impl<const C: usize, const B: usize> WifiSetup<C, B> {
+impl<const C: usize, const B: usize> WifiSetupGeneric<C, B> {
     pub fn new() -> Result<Self> {
         // setup the channel for client requests
         let (sender, request_receiver) = mpsc::channel(C);
@@ -20,7 +25,7 @@ impl<const C: usize, const B: usize> WifiSetup<C, B> {
 
         Ok(Self {
             wifi: WifiAp {
-                socket_path: PATH_DEFAULT_SERVER.to_string(),
+                socket_path: PATH_DEFAULT_SERVER.into(),
                 request_receiver,
                 broadcast_sender,
             },
@@ -29,8 +34,8 @@ impl<const C: usize, const B: usize> WifiSetup<C, B> {
         })
     }
 
-    pub fn set_socket_path(&mut self, path: String) {
-        self.wifi.socket_path = path;
+    pub fn set_socket_path<S: Into<std::path::PathBuf>>(&mut self, path: S) {
+        self.wifi.socket_path = path.into();
     }
 
     pub fn get_broadcast_receiver(&self) -> BroadcastReceiver {
