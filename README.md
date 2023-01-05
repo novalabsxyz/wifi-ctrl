@@ -3,4 +3,6 @@
 
 Tokio-based runtimes for communicating with hostapd and wpa-supplicant.
 
-[Please see docs here.](https://docs.rs/wifi-ctrl/0.1.0/wifi_ctrl/)
+[Please see docs here.](https://docs.rs/wifi-ctrl/0.1.0/wifi_ctrl/). 
+
+See examples in the `examples` directory for a quick start.
