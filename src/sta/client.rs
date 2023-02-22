@@ -1,6 +1,7 @@
 use super::*;
 
-/// Use a reference counter since ScanResults may be sent to many clients at once
+/// A vector of ScanResult, wrapped in an Arc. If more than one client is awaiting the result of a
+/// scan, the result will be shared between them.
 pub type ScanResults = Arc<Vec<ScanResult>>;
 
 #[derive(Debug)]

@@ -15,7 +15,7 @@ async fn main() -> Result {
     let requester = setup.get_request_client();
     let runtime = setup.complete();
 
-    let (_runtime, _broadcast) = tokio::join!(
+    let (_runtime, _app) = tokio::join!(
         async move {
             if let Err(e) = runtime.run().await {
                 error!("Error: {e}");

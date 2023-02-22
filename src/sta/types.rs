@@ -5,12 +5,13 @@ use std::str::FromStr;
 use tokio::net::UnixDatagram;
 
 #[derive(Serialize, Debug, Clone)]
+/// The result from scanning for networks.
 pub struct ScanResult {
-    mac: String,
-    frequency: String,
+    pub mac: String,
+    pub frequency: String,
     pub signal: isize,
-    flags: String,
-    name: String,
+    pub flags: String,
+    pub name: String,
 }
 
 impl ScanResult {
@@ -58,6 +59,7 @@ impl ScanResult {
 }
 
 #[derive(Serialize, Debug, Clone)]
+/// A known WiFi network.
 pub struct NetworkResult {
     network_id: usize,
     ssid: String,
@@ -97,6 +99,7 @@ impl NetworkResult {
     }
 }
 
+/// A HashMap of what is returned when running `wpa_cli status`.
 pub type Status = HashMap<String, String>;
 
 pub(crate) fn parse_status(response: &str) -> Result<Status> {
