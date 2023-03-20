@@ -14,9 +14,14 @@ pub struct SocketHandle<const N: usize> {
 const RETRY_MINUTES: u64 = 5;
 
 impl<const N: usize> SocketHandle<N> {
-    pub async fn open<P>(path: P, label: &str) -> Result<Self>
+    pub(crate) async fn open<P, S>(
+        path: P,
+        label: &str,
+        request_channel: &mut mpsc::Receiver<S>,
+    ) -> Result<Self>
     where
         P: AsRef<std::path::Path> + std::fmt::Debug,
+        S: ShutdownSignal,
     {
         let tmp_dir = tempfile::tempdir()?;
         let connect_from = tmp_dir.path().join(label);
@@ -47,6 +52,15 @@ impl<const N: usize> SocketHandle<N> {
             _ = async move {
                 tokio::time::sleep(tokio::time::Duration::from_secs(60*RETRY_MINUTES)).await;
             } => Err(error::Error::TimeoutOpeningSocket(socket_debug.to_string())),
+            _ = async move {
+                loop {
+                    if let Some(request) = request_channel.recv().await {
+                        if request.is_shutdown() {
+                            break;
+                        }
+                    }
+                }
+            } => Err(error::Error::StartupAborted),
         )?;
 
         Ok(Self {

@@ -5,6 +5,8 @@ use thiserror::Error;
 pub enum Error {
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
+    #[error("start-up aborted")]
+    StartupAborted,
     #[error("error parsing wifi status {e}: \n{s}")]
     ParsingWifiStatus { e: config::ConfigError, s: String },
     #[error("unexpected wifi ap response: {0}")]

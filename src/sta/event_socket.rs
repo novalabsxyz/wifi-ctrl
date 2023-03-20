@@ -18,11 +18,15 @@ pub(crate) enum Event {
 pub(crate) type EventReceiver = mpsc::Receiver<Event>;
 
 impl EventSocket {
-    pub(crate) async fn new<P>(socket: P) -> Result<(EventReceiver, Self)>
+    pub(crate) async fn new<P>(
+        socket: P,
+        request_receiver: &mut mpsc::Receiver<Request>,
+    ) -> Result<(EventReceiver, Self)>
     where
         P: AsRef<std::path::Path> + std::fmt::Debug,
     {
-        let socket_handle = SocketHandle::open(socket, "mapper_wpa_ctrl_async.sock").await?;
+        let socket_handle =
+            SocketHandle::open(socket, "mapper_wpa_ctrl_async.sock", request_receiver).await?;
         let (sender, receiver) = mpsc::channel(32);
         Ok((
             receiver,

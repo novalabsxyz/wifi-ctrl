@@ -6,6 +6,12 @@ pub(crate) enum Request {
     Shutdown,
 }
 
+impl ShutdownSignal for Request {
+    fn is_shutdown(&self) -> bool {
+        matches!(self, Request::Shutdown)
+    }
+}
+
 #[derive(Clone)]
 /// Request client wraps the request events, awaiting oneshot channels when appropriate
 pub struct RequestClient {

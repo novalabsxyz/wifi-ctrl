@@ -15,6 +15,7 @@ pub enum SelectResult {
 }
 
 use std::fmt;
+
 impl fmt::Display for SelectResult {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {
@@ -39,6 +40,12 @@ pub(crate) enum Request {
     RemoveNetwork(usize),
     SelectNetwork(usize, oneshot::Sender<SelectResult>),
     Shutdown,
+}
+
+impl ShutdownSignal for Request {
+    fn is_shutdown(&self) -> bool {
+        matches!(self, Request::Shutdown)
+    }
 }
 
 #[derive(Debug)]

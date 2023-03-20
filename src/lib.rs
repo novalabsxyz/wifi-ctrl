@@ -29,3 +29,7 @@ use socket_handle::SocketHandle;
 pub type Result<T = ()> = std::result::Result<T, error::Error>;
 
 use log::{debug, error, info, warn};
+
+pub(crate) trait ShutdownSignal {
+    fn is_shutdown(&self) -> bool;
+}
