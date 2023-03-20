@@ -28,20 +28,15 @@ pub struct WifiStation {
 impl WifiStation {
     pub async fn run(self) -> Result {
         info!("Starting Wifi Station process");
-
+        let socket_handle =
+            SocketHandle::open(&self.socket_path, "mapper_wpa_ctrl_sync.sock").await?;
+        // We start up a separate socket for receiving the "unexpected" events that
+        // gets forwarded to us via the unsolicited_receiver
+        let (unsolicited_receiver, unsolicited) = EventSocket::new(&self.socket_path).await?;
+        self.broadcast_sender.send(Broadcast::Ready)?;
         tokio::select!(
-            resp = async move {
-                let socket_handle =
-                    SocketHandle::open(&self.socket_path, "mapper_wpa_ctrl_sync.sock").await?;
-                // We start up a separate socket for receiving the "unexpected" events that
-                // gets forwarded to us via the unsolicited_receiver
-                let (unsolicited_receiver, unsolicited) = EventSocket::new(&self.socket_path).await?;
-                self.broadcast_sender.send(Broadcast::Ready)?;
-                tokio::select!(
-                    resp = unsolicited.run() => resp,
-                    resp = self.run_internal(unsolicited_receiver, socket_handle) => resp,
-                )
-            } => resp,
+            resp = unsolicited.run() => resp,
+            resp = self.run_internal(unsolicited_receiver, socket_handle) => resp,
         )
     }
 
