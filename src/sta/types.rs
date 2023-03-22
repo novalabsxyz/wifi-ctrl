@@ -61,9 +61,9 @@ impl ScanResult {
 #[derive(Serialize, Debug, Clone)]
 /// A known WiFi network.
 pub struct NetworkResult {
-    network_id: usize,
-    ssid: String,
-    flags: String,
+    pub network_id: usize,
+    pub ssid: String,
+    pub flags: String,
 }
 
 impl NetworkResult {
