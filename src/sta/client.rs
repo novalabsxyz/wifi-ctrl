@@ -85,10 +85,10 @@ impl RequestClient {
         Ok(request.await?)
     }
 
-    pub async fn get_status(&self) -> Result<Result<Status>> {
+    pub async fn get_status(&self) -> Result<Status> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::Status(response)).await?;
-        Ok(request.await?)
+        request.await?
     }
 
     pub async fn add_network(&self) -> Result<usize> {
