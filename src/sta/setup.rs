@@ -28,7 +28,7 @@ impl<const C: usize, const B: usize> WifiSetupGeneric<C, B> {
                 socket_path: PATH_DEFAULT_SERVER.into(),
                 request_receiver,
                 broadcast_sender,
-                self_sender
+                self_sender,
             },
             request_client,
             broadcast_receiver,

@@ -74,11 +74,14 @@ impl<const N: usize> SocketHandle<N> {
             return Err(error::Error::StartupAborted);
         }
 
-        Ok((Self {
-            tmp_dir,
-            socket: socket?,
-            buffer: [0; N],
-        }, deferred_requests))
+        Ok((
+            Self {
+                tmp_dir,
+                socket: socket?,
+                buffer: [0; N],
+            },
+            deferred_requests,
+        ))
     }
 
     pub async fn command(&mut self, cmd: &[u8]) -> Result {

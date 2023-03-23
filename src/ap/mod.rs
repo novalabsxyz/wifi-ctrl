@@ -25,7 +25,6 @@ pub struct WifiAp {
     broadcast_sender: broadcast::Sender<Broadcast>,
     /// Channel for sending requests to itself
     self_sender: mpsc::Sender<Request>,
-
 }
 
 impl WifiAp {
