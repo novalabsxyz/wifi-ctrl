@@ -23,12 +23,14 @@ pub struct WifiStation {
     #[allow(unused)]
     /// Channel for broadcasting alerts
     broadcast_sender: broadcast::Sender<Broadcast>,
+    /// Channel for sending requests to itself
+    self_sender: mpsc::Sender<Request>,
 }
 
 impl WifiStation {
     pub async fn run(mut self) -> Result {
         info!("Starting Wifi Station process");
-        let socket_handle = SocketHandle::open(
+        let (socket_handle, mut deferred_requests) = SocketHandle::open(
             &self.socket_path,
             "mapper_wpa_ctrl_sync.sock",
             &mut self.request_receiver,
@@ -36,8 +38,12 @@ impl WifiStation {
         .await?;
         // We start up a separate socket for receiving the "unexpected" events that
         // gets forwarded to us via the unsolicited_receiver
-        let (unsolicited_receiver, unsolicited) =
+        let (unsolicited_receiver, next_deferred_requests, unsolicited) =
             EventSocket::new(&self.socket_path, &mut self.request_receiver).await?;
+        deferred_requests.extend(next_deferred_requests);
+        for request in deferred_requests {
+            let _ = self.self_sender.send(request).await;
+        }
         self.broadcast_sender.send(Broadcast::Ready)?;
         tokio::select!(
             resp = unsolicited.run() => resp,

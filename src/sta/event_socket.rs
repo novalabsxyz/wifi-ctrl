@@ -21,15 +21,17 @@ impl EventSocket {
     pub(crate) async fn new<P>(
         socket: P,
         request_receiver: &mut mpsc::Receiver<Request>,
-    ) -> Result<(EventReceiver, Self)>
+    ) -> Result<(EventReceiver, Vec<Request>, Self)>
     where
         P: AsRef<std::path::Path> + std::fmt::Debug,
     {
-        let socket_handle =
+        let (socket_handle, deferred_requests) =
             SocketHandle::open(socket, "mapper_wpa_ctrl_async.sock", request_receiver).await?;
+        // setup the channel for client requests
         let (sender, receiver) = mpsc::channel(32);
         Ok((
             receiver,
+            deferred_requests,
             Self {
                 socket_handle,
                 sender,

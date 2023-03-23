@@ -6,12 +6,11 @@ pub(crate) enum Request {
     Shutdown,
 }
 
-#[async_trait]
 impl ShutdownSignal for Request {
     fn is_shutdown(&self) -> bool {
         matches!(self, Request::Shutdown)
     }
-    async fn inform_of_shutdown(self) {
+    fn inform_of_shutdown(self) {
         match self {
             Request::Status(response) => {
                 let _ = response.send(Err(error::Error::StartupAborted));

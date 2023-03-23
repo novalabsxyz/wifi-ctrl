@@ -30,9 +30,7 @@ pub type Result<T = ()> = std::result::Result<T, error::Error>;
 
 use log::{debug, error, info, warn};
 
-use async_trait::async_trait;
-#[async_trait]
 pub(crate) trait ShutdownSignal {
     fn is_shutdown(&self) -> bool;
-    async fn inform_of_shutdown(self);
+    fn inform_of_shutdown(self);
 }
