@@ -15,28 +15,19 @@ async fn main() -> Result {
     let requester = setup.get_request_client();
     let runtime = setup.complete();
 
-    let (_runtime, _app) = tokio::join!(
+    let (_runtime, _app, _broadcast) = tokio::join!(
         async move {
             if let Err(e) = runtime.run().await {
                 error!("Error: {e}");
             }
         },
-        app(requester, broadcast)
+        app(requester),
+        broadcast_listener(broadcast),
     );
     Ok(())
 }
 
-async fn app(requester: sta::RequestClient, mut broadcast: sta::BroadcastReceiver) -> Result {
-    // Block until runtime has a confirmed socket connection.
-    // This isn't really essential, but it makes a shutdown happen more gracefully on failures.
-    while let Ok(broadcast) = broadcast.recv().await {
-        if let sta::Broadcast::Ready = broadcast {
-            break;
-        } else {
-            info!("Received unexpected broadcast: {:?}", broadcast);
-        }
-    }
-
+async fn app(requester: sta::RequestClient) -> Result {
     info!("Requesting scan");
     let scan = requester.get_scan().await?;
     info!("Scan complete");
@@ -51,5 +42,12 @@ async fn app(requester: sta::RequestClient, mut broadcast: sta::BroadcastReceive
     }
     info!("Shutting down");
     requester.shutdown().await?;
+    Ok(())
+}
+
+async fn broadcast_listener(mut broadcast_receiver: sta::BroadcastReceiver) -> Result {
+    while let Ok(broadcast) = broadcast_receiver.recv().await {
+        info!("Broadcast: {:?}", broadcast);
+    }
     Ok(())
 }
