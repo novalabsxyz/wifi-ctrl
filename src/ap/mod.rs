@@ -23,21 +23,27 @@ pub struct WifiAp {
     #[allow(unused)]
     /// Channel for broadcasting alerts
     broadcast_sender: broadcast::Sender<Broadcast>,
+    /// Channel for sending requests to itself
+    self_sender: mpsc::Sender<Request>,
 }
 
 impl WifiAp {
     pub async fn run(mut self) -> Result {
         info!("Starting Wifi AP process");
-        let (event_receiver, event_socket) =
+        let (event_receiver, mut deferred_requests, event_socket) =
             EventSocket::new(&self.socket_path, &mut self.request_receiver).await?;
         // We start up a separate socket for receiving the "unexpected" events that
         // gets forwarded to us via the event_receiver
-        let socket_handle = SocketHandle::open(
+        let (socket_handle, next_deferred_requests) = SocketHandle::open(
             &self.socket_path,
             "mapper_hostapd_sync.sock",
             &mut self.request_receiver,
         )
         .await?;
+        deferred_requests.extend(next_deferred_requests);
+        for request in deferred_requests {
+            let _ = self.self_sender.send(request).await;
+        }
         self.broadcast_sender.send(Broadcast::Ready)?;
         tokio::select!(
             resp = event_socket.run() => resp,
@@ -109,7 +115,7 @@ impl WifiAp {
                 let data_str = std::str::from_utf8(&socket_handle.buffer[..n])?.trim_end();
                 let status = Status::from_response(data_str)?;
 
-                if response_channel.send(status).is_err() {
+                if response_channel.send(Ok(status)).is_err() {
                     error!("Status request response channel closed before response sent");
                 }
             }

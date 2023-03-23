@@ -2,13 +2,21 @@ use super::*;
 
 #[derive(Debug)]
 pub(crate) enum Request {
-    Status(oneshot::Sender<Status>),
+    Status(oneshot::Sender<Result<Status>>),
     Shutdown,
 }
 
 impl ShutdownSignal for Request {
     fn is_shutdown(&self) -> bool {
         matches!(self, Request::Shutdown)
+    }
+    fn inform_of_shutdown(self) {
+        match self {
+            Request::Status(response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::Shutdown => {}
+        }
     }
 }
 
@@ -34,7 +42,7 @@ impl RequestClient {
     pub async fn get_status(&self) -> Result<Status> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::Status(response)).await?;
-        Ok(request.await?)
+        request.await?
     }
 
     pub async fn shutdown(&self) -> Result {

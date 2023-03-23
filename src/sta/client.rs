@@ -32,19 +32,48 @@ impl fmt::Display for SelectResult {
 #[derive(Debug)]
 pub(crate) enum Request {
     Status(oneshot::Sender<Result<Status>>),
-    Networks(oneshot::Sender<Vec<NetworkResult>>),
-    Scan(oneshot::Sender<ScanResults>),
-    AddNetwork(oneshot::Sender<usize>),
-    SetNetwork(usize, SetNetwork),
-    SaveConfig,
-    RemoveNetwork(usize),
-    SelectNetwork(usize, oneshot::Sender<SelectResult>),
+    Networks(oneshot::Sender<Result<Vec<NetworkResult>>>),
+    Scan(oneshot::Sender<Result<ScanResults>>),
+    AddNetwork(oneshot::Sender<Result<usize>>),
+    SetNetwork(usize, SetNetwork, oneshot::Sender<Result>),
+    SaveConfig(oneshot::Sender<Result>),
+    RemoveNetwork(usize, oneshot::Sender<Result>),
+    SelectNetwork(usize, oneshot::Sender<Result<SelectResult>>),
     Shutdown,
 }
 
 impl ShutdownSignal for Request {
     fn is_shutdown(&self) -> bool {
         matches!(self, Request::Shutdown)
+    }
+    fn inform_of_shutdown(self) {
+        match self {
+            Request::Status(response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::Networks(response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::Scan(response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::AddNetwork(response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::SetNetwork(_, _, response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::SaveConfig(response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::RemoveNetwork(_, response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::SelectNetwork(_, response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::Shutdown => {}
+        }
     }
 }
 
@@ -76,13 +105,13 @@ impl RequestClient {
     pub async fn get_scan(&self) -> Result<Arc<Vec<ScanResult>>> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::Scan(response)).await?;
-        Ok(request.await?)
+        request.await?
     }
 
     pub async fn get_networks(&self) -> Result<Vec<NetworkResult>> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::Networks(response)).await?;
-        Ok(request.await?)
+        request.await?
     }
 
     pub async fn get_status(&self) -> Result<Status> {
@@ -94,37 +123,51 @@ impl RequestClient {
     pub async fn add_network(&self) -> Result<usize> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::AddNetwork(response)).await?;
-        Ok(request.await?)
+        request.await?
     }
 
     pub async fn set_network_psk(&self, network_id: usize, psk: String) -> Result {
-        self.send_request(Request::SetNetwork(network_id, SetNetwork::Psk(psk)))
-            .await?;
-        Ok(())
+        let (response, request) = oneshot::channel();
+
+        self.send_request(Request::SetNetwork(
+            network_id,
+            SetNetwork::Psk(psk),
+            response,
+        ))
+        .await?;
+        request.await?
     }
 
     pub async fn set_network_ssid(&self, network_id: usize, ssid: String) -> Result {
-        self.send_request(Request::SetNetwork(network_id, SetNetwork::Ssid(ssid)))
-            .await?;
-        Ok(())
+        let (response, request) = oneshot::channel();
+        self.send_request(Request::SetNetwork(
+            network_id,
+            SetNetwork::Ssid(ssid),
+            response,
+        ))
+        .await?;
+        request.await?
     }
 
     pub async fn save_config(&self) -> Result {
-        self.send_request(Request::SaveConfig).await?;
-        Ok(())
+        let (response, request) = oneshot::channel();
+
+        self.send_request(Request::SaveConfig(response)).await?;
+        request.await?
     }
 
     pub async fn remove_network(&self, network_id: usize) -> Result {
-        self.send_request(Request::RemoveNetwork(network_id))
+        let (response, request) = oneshot::channel();
+        self.send_request(Request::RemoveNetwork(network_id, response))
             .await?;
-        Ok(())
+        request.await?
     }
 
     pub async fn select_network(&self, network_id: usize) -> Result<SelectResult> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::SelectNetwork(network_id, response))
             .await?;
-        Ok(request.await?)
+        request.await?
     }
 
     pub async fn shutdown(&self) -> Result {

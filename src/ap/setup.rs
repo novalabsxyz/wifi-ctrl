@@ -18,8 +18,8 @@ pub struct WifiSetupGeneric<const C: usize = 32, const B: usize = 32> {
 impl<const C: usize, const B: usize> WifiSetupGeneric<C, B> {
     pub fn new() -> Result<Self> {
         // setup the channel for client requests
-        let (sender, request_receiver) = mpsc::channel(C);
-        let request_client = RequestClient::new(sender);
+        let (self_sender, request_receiver) = mpsc::channel(C);
+        let request_client = RequestClient::new(self_sender.clone());
         // setup the channel for broadcasts
         let (broadcast_sender, broadcast_receiver) = broadcast::channel(B);
 
@@ -28,6 +28,7 @@ impl<const C: usize, const B: usize> WifiSetupGeneric<C, B> {
                 socket_path: PATH_DEFAULT_SERVER.into(),
                 request_receiver,
                 broadcast_sender,
+                self_sender,
             },
             request_client,
             broadcast_receiver,

@@ -18,7 +18,7 @@ impl<const N: usize> SocketHandle<N> {
         path: P,
         label: &str,
         request_channel: &mut mpsc::Receiver<S>,
-    ) -> Result<Self>
+    ) -> Result<(Self, Vec<S>)>
     where
         P: AsRef<std::path::Path> + std::fmt::Debug,
         S: ShutdownSignal,
@@ -28,6 +28,8 @@ impl<const N: usize> SocketHandle<N> {
         let socket = UnixDatagram::bind(connect_from)?;
         let socket_debug = &format!("{path:?}");
         // loop around waiting for the socket for up to 5 minutes
+        let mut deferred_requests = Vec::new();
+        let deferred_requests_handle = &mut deferred_requests;
         let socket = tokio::select!(
             resp = async move  {
                 let mut loop_count = 0;
@@ -57,17 +59,29 @@ impl<const N: usize> SocketHandle<N> {
                     if let Some(request) = request_channel.recv().await {
                         if request.is_shutdown() {
                             break;
+                        } else {
+                            deferred_requests_handle.push(request);
                         }
                     }
                 }
             } => Err(error::Error::StartupAborted),
-        )?;
+        );
 
-        Ok(Self {
-            tmp_dir,
-            socket,
-            buffer: [0; N],
-        })
+        if let Err(error::Error::StartupAborted) = socket {
+            for request in deferred_requests {
+                request.inform_of_shutdown();
+            }
+            return Err(error::Error::StartupAborted);
+        }
+
+        Ok((
+            Self {
+                tmp_dir,
+                socket: socket?,
+                buffer: [0; N],
+            },
+            deferred_requests,
+        ))
     }
 
     pub async fn command(&mut self, cmd: &[u8]) -> Result {
