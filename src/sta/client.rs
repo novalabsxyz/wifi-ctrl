@@ -105,13 +105,13 @@ impl RequestClient {
     pub async fn get_scan(&self) -> Result<Arc<Vec<ScanResult>>> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::Scan(response)).await?;
-        Ok(request.await??)
+        request.await?
     }
 
     pub async fn get_networks(&self) -> Result<Vec<NetworkResult>> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::Networks(response)).await?;
-        Ok(request.await??)
+        request.await?
     }
 
     pub async fn get_status(&self) -> Result<Status> {
@@ -123,7 +123,7 @@ impl RequestClient {
     pub async fn add_network(&self) -> Result<usize> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::AddNetwork(response)).await?;
-        Ok(request.await??)
+        request.await?
     }
 
     pub async fn set_network_psk(&self, network_id: usize, psk: String) -> Result {

@@ -42,7 +42,7 @@ impl RequestClient {
     pub async fn get_status(&self) -> Result<Status> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::Status(response)).await?;
-        Ok(request.await??)
+        request.await?
     }
 
     pub async fn shutdown(&self) -> Result {
