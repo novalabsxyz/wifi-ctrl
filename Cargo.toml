@@ -10,12 +10,13 @@ readme = "README.md"
 keywords = ["hostapd", "wpa-supplicant", "wpa_supplicant", "wpa-cli", "wifi"]
 
 [dependencies]
+async-trait = "0"
 config = {version="0", default-features = false, features = ["ini"]}
+log = { version = "0" }
 serde =  {version = "1", features = ["derive"] }
 thiserror = "1"
 tempfile = "3"
 tokio = { version = "1", default-features = false, features = ["net",  "sync", "macros", "time"] }
-log = { version = "0" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread"] }

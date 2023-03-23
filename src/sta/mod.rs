@@ -103,8 +103,8 @@ impl WifiStation {
     async fn handle_event<const N: usize>(
         socket_handle: &mut SocketHandle<N>,
         event: Event,
-        scan_requests: &mut Vec<oneshot::Sender<Arc<Vec<ScanResult>>>>,
-        select_request: &mut Option<oneshot::Sender<SelectResult>>,
+        scan_requests: &mut Vec<oneshot::Sender<Result<Arc<Vec<ScanResult>>>>>,
+        select_request: &mut Option<oneshot::Sender<Result<SelectResult>>>,
         broadcast_sender: &mut broadcast::Sender<Broadcast>,
     ) -> Result {
         match event {
@@ -117,7 +117,7 @@ impl WifiStation {
 
                 let results = Arc::new(scan_results);
                 while let Some(scan_request) = scan_requests.pop() {
-                    if scan_request.send(results.clone()).is_err() {
+                    if scan_request.send(Ok(results.clone())).is_err() {
                         error!("Scan request response channel closed before response sent");
                     }
                 }
@@ -126,7 +126,7 @@ impl WifiStation {
                 broadcast_sender.send(Broadcast::Connected)?;
                 if let Some(sender) = select_request.take() {
                     sender
-                        .send(SelectResult::Success)
+                        .send(Ok(SelectResult::Success))
                         .map_err(|_| error::Error::WifiSelect)?;
                 }
             }
@@ -137,7 +137,7 @@ impl WifiStation {
                 broadcast_sender.send(Broadcast::NetworkNotFound)?;
                 if let Some(sender) = select_request.take() {
                     sender
-                        .send(SelectResult::NotFound)
+                        .send(Ok(SelectResult::NotFound))
                         .map_err(|_| error::Error::WifiSelect)?;
                 }
             }
@@ -145,7 +145,7 @@ impl WifiStation {
                 broadcast_sender.send(Broadcast::WrongPsk)?;
                 if let Some(sender) = select_request.take() {
                     sender
-                        .send(SelectResult::WrongPsk)
+                        .send(Ok(SelectResult::WrongPsk))
                         .map_err(|_| error::Error::WifiSelect)?;
                 }
             }
@@ -156,8 +156,8 @@ impl WifiStation {
     async fn handle_request<const N: usize>(
         socket_handle: &mut SocketHandle<N>,
         request: Request,
-        scan_requests: &mut Vec<oneshot::Sender<Arc<Vec<ScanResult>>>>,
-        select_request: &mut Option<oneshot::Sender<SelectResult>>,
+        scan_requests: &mut Vec<oneshot::Sender<Result<Arc<Vec<ScanResult>>>>>,
+        select_request: &mut Option<oneshot::Sender<Result<SelectResult>>>,
     ) -> Result {
         debug!("Handling request: {request:?}");
         match request {
@@ -173,7 +173,7 @@ impl WifiStation {
                 let data_str = std::str::from_utf8(&socket_handle.buffer[..n])?.trim_end();
                 let network_list =
                     NetworkResult::vec_from_str(data_str, &mut socket_handle.socket).await?;
-                if response_channel.send(network_list).is_err() {
+                if response_channel.send(Ok(network_list)).is_err() {
                     error!("Scan request response channel closed before response sent");
                 }
             }
@@ -191,13 +191,13 @@ impl WifiStation {
                 let n = socket_handle.socket.recv(&mut socket_handle.buffer).await?;
                 let data_str = std::str::from_utf8(&socket_handle.buffer[..n])?.trim_end();
                 let network_id = usize::from_str(data_str)?;
-                if response_channel.send(network_id).is_err() {
+                if response_channel.send(Ok(network_id)).is_err() {
                     error!("Scan request response channel closed before response sent");
                 } else {
                     debug!("wpa_ctrl created network {network_id}");
                 }
             }
-            Request::SetNetwork(id, param) => {
+            Request::SetNetwork(id, param, response) => {
                 let cmd = format!(
                     "SET_NETWORK {id} {}",
                     match param {
@@ -210,20 +210,23 @@ impl WifiStation {
                 if let Err(e) = socket_handle.command(&bytes).await {
                     warn!("Error while setting network parameter: {e}");
                 }
+                let _ = response.send(Ok(()));
             }
-            Request::SaveConfig => {
+            Request::SaveConfig(response) => {
                 if let Err(e) = socket_handle.command(b"SAVE_CONFIG").await {
                     warn!("Error while saving config: {e}");
                 }
                 debug!("wpa_ctrl config saved");
+                let _ = response.send(Ok(()));
             }
-            Request::RemoveNetwork(id) => {
+            Request::RemoveNetwork(id, response) => {
                 let cmd = format!("REMOVE_NETWORK {id}");
                 let bytes = cmd.into_bytes();
                 if let Err(e) = socket_handle.command(&bytes).await {
                     warn!("Error while removing network {id}: {e}");
                 }
                 debug!("wpa_ctrl removed network {id}");
+                let _ = response.send(Ok(()));
             }
             Request::SelectNetwork(id, response_sender) => {
                 let response_sender = match select_request {
@@ -233,7 +236,7 @@ impl WifiStation {
                         if let Err(e) = socket_handle.command(&bytes).await {
                             warn!("Error while selecting network {id}: {e}");
                             response_sender
-                                .send(SelectResult::InvalidNetworkId)
+                                .send(Ok(SelectResult::InvalidNetworkId))
                                 .map_err(|_| error::Error::WifiSelect)?;
                             None
                         } else {
@@ -244,7 +247,7 @@ impl WifiStation {
                     Some(_) => {
                         warn!("Select request already pending! Dropping this one.");
                         response_sender
-                            .send(SelectResult::PendingSelect)
+                            .send(Ok(SelectResult::PendingSelect))
                             .map_err(|_| error::Error::WifiSelect)?;
                         debug!("wpa_ctrl removed network {id}");
                         None

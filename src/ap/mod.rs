@@ -109,7 +109,7 @@ impl WifiAp {
                 let data_str = std::str::from_utf8(&socket_handle.buffer[..n])?.trim_end();
                 let status = Status::from_response(data_str)?;
 
-                if response_channel.send(status).is_err() {
+                if response_channel.send(Ok(status)).is_err() {
                     error!("Status request response channel closed before response sent");
                 }
             }
