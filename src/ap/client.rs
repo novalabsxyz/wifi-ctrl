@@ -6,6 +6,7 @@ pub(crate) enum Request {
     Config(oneshot::Sender<Result<Config>>),
     Enable(oneshot::Sender<Result>),
     Disable(oneshot::Sender<Result>),
+    SetValue(String, String, oneshot::Sender<Result>),
     Shutdown,
 }
 
@@ -22,6 +23,9 @@ impl ShutdownSignal for Request {
                 let _ = response.send(Err(error::Error::StartupAborted));
             }
             Request::Enable(response) | Request::Disable(response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::SetValue(_, _, response) => {
                 let _ = response.send(Err(error::Error::StartupAborted));
             }
             Request::Shutdown => {}
@@ -69,6 +73,13 @@ impl RequestClient {
     pub async fn disable(&self) -> Result {
         let (response, request) = oneshot::channel();
         self.send_request(Request::Disable(response)).await?;
+        request.await?
+    }
+
+    pub async fn set_value(&self, key: &str, value: &str) -> Result {
+        let (response, request) = oneshot::channel();
+        self.send_request(Request::SetValue(key.into(), value.into(), response))
+            .await?;
         request.await?
     }
 

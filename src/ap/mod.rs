@@ -135,6 +135,11 @@ impl WifiAp {
             Request::Disable(response_channel) => {
                 Self::ok_fail_request(socket_handle, b"DISABLE", response_channel).await?
             }
+            Request::SetValue(key, value, response_channel) => {
+                let request_string = format!("SET {key} {value}");
+                Self::ok_fail_request(socket_handle, request_string.as_bytes(), response_channel)
+                    .await?
+            }
             Request::Shutdown => (), //shutdown is handled at the scope above
         }
         Ok(())
