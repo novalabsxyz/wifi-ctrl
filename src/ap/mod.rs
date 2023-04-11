@@ -129,7 +129,33 @@ impl WifiAp {
                     error!("Config request response channel closed before response sent");
                 }
             }
+            Request::Enable(response_channel) => {
+                Self::ok_fail_request(socket_handle, b"ENABLE", response_channel).await?
+            }
+            Request::Disable(response_channel) => {
+                Self::ok_fail_request(socket_handle, b"DISABLE", response_channel).await?
+            }
             Request::Shutdown => (), //shutdown is handled at the scope above
+        }
+        Ok(())
+    }
+
+    async fn ok_fail_request<const N: usize>(
+        socket_handle: &mut SocketHandle<N>,
+        request: &[u8],
+        response_channel: oneshot::Sender<Result>,
+    ) -> Result {
+        let _n = socket_handle.socket.send(request).await?;
+        let n = socket_handle.socket.recv(&mut socket_handle.buffer).await?;
+        let data_str = std::str::from_utf8(&socket_handle.buffer[..n])?.trim_end();
+        let response = if data_str == "OK" {
+            Ok(())
+        } else {
+            Err(error::Error::UnexpectedWifiApRepsonse(data_str.into()))
+        };
+
+        if response_channel.send(response).is_err() {
+            error!("Config request response channel closed before response sent");
         }
         Ok(())
     }
