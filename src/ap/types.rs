@@ -1,5 +1,5 @@
 use super::{error, Result};
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Serialize};
 
 /// Status of the WiFi Station
 #[derive(Serialize, Deserialize, Debug)]
@@ -48,5 +48,47 @@ impl Status {
             })?;
 
         Ok(config.try_deserialize::<Status>().unwrap())
+    }
+}
+
+// Configuration of the WiFi station
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Config {
+    pub bssid: String,
+    pub ssid: String,
+    #[serde(deserialize_with = "deserialize_enabled_bool")]
+    pub wps_state: bool,
+    pub wpa: i32,
+    pub ket_mgmt: String,
+    pub group_cipher: String,
+    pub rsn_pairwise_cipher: String,
+    pub wpa_pairwise_cipher: String,
+}
+
+impl Config {
+    pub fn from_response(response: &str) -> Result<Config> {
+        use config::{File, FileFormat};
+        let config = config::Config::builder()
+            .add_source(File::from_str(response, FileFormat::Ini))
+            .build()
+            .map_err(|e| error::Error::ParsingWifiConfig {
+                e,
+                s: response.into(),
+            })?;
+
+        Ok(config.try_deserialize::<Config>().unwrap())
+    }
+}
+
+fn deserialize_enabled_bool<'de, D>(deserializer: D) -> std::result::Result<bool, D::Error>
+where
+    D: de::Deserializer<'de>,
+{
+    let s: &str = de::Deserialize::deserialize(deserializer)?;
+
+    match s {
+        "enabled" => Ok(true),
+        "disabled" => Ok(false),
+        _ => Err(de::Error::unknown_variant(s, &["enabled", "disabled"])),
     }
 }

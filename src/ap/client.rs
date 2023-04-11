@@ -3,6 +3,9 @@ use super::*;
 #[derive(Debug)]
 pub(crate) enum Request {
     Status(oneshot::Sender<Result<Status>>),
+    Config(oneshot::Sender<Result<Config>>),
+    Enable(oneshot::Sender<Result>),
+    Disable(oneshot::Sender<Result>),
     Shutdown,
 }
 
@@ -13,6 +16,12 @@ impl ShutdownSignal for Request {
     fn inform_of_shutdown(self) {
         match self {
             Request::Status(response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::Config(response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
+            Request::Enable(response) | Request::Disable(response) => {
                 let _ = response.send(Err(error::Error::StartupAborted));
             }
             Request::Shutdown => {}
@@ -42,6 +51,24 @@ impl RequestClient {
     pub async fn get_status(&self) -> Result<Status> {
         let (response, request) = oneshot::channel();
         self.send_request(Request::Status(response)).await?;
+        request.await?
+    }
+
+    pub async fn get_config(&self) -> Result<Config> {
+        let (response, request) = oneshot::channel();
+        self.send_request(Request::Config(response)).await?;
+        request.await?
+    }
+
+    pub async fn enable(&self) -> Result {
+        let (response, request) = oneshot::channel();
+        self.send_request(Request::Enable(response)).await?;
+        request.await?
+    }
+
+    pub async fn disable(&self) -> Result {
+        let (response, request) = oneshot::channel();
+        self.send_request(Request::Disable(response)).await?;
         request.await?
     }
 

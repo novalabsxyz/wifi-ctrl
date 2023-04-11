@@ -9,6 +9,8 @@ pub enum Error {
     StartupAborted,
     #[error("error parsing wifi status {e}: \n{s}")]
     ParsingWifiStatus { e: config::ConfigError, s: String },
+    #[error("error parsing wifi config {e}: \n{s}")]
+    ParsingWifiConfig { e: config::ConfigError, s: String },
     #[error("unexpected wifi ap response: {0}")]
     UnexpectedWifiApRepsonse(String),
     #[error("timeout waiting for response")]

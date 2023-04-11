@@ -119,6 +119,16 @@ impl WifiAp {
                     error!("Status request response channel closed before response sent");
                 }
             }
+            Request::Config(response_channel) => {
+                let _n = socket_handle.socket.send(b"GET_CONFIG").await?;
+                let n = socket_handle.socket.recv(&mut socket_handle.buffer).await?;
+                let data_str = std::str::from_utf8(&socket_handle.buffer[..n])?.trim_end();
+                let config = Config::from_response(data_str)?;
+
+                if response_channel.send(Ok(config)).is_err() {
+                    error!("Config request response channel closed before response sent");
+                }
+            }
             Request::Shutdown => (), //shutdown is handled at the scope above
         }
         Ok(())
