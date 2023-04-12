@@ -29,6 +29,7 @@ impl<const C: usize, const B: usize> WifiSetupGeneric<C, B> {
                 request_receiver,
                 broadcast_sender,
                 self_sender,
+                select_timeout: Duration::from_secs(10),
             },
             request_client,
             broadcast_receiver,
@@ -38,6 +39,11 @@ impl<const C: usize, const B: usize> WifiSetupGeneric<C, B> {
     pub fn set_socket_path<S: Into<std::path::PathBuf>>(&mut self, path: S) {
         self.wifi.socket_path = path.into();
     }
+
+    pub fn set_select_timeout(&mut self, timeout: Duration) {
+        self.wifi.select_timeout = timeout;
+    }
+
     pub fn get_broadcast_receiver(&self) -> BroadcastReceiver {
         self.wifi.broadcast_sender.subscribe()
     }
