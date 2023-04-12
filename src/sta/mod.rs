@@ -114,7 +114,7 @@ impl WifiStation {
         socket_handle: &mut SocketHandle<N>,
         event: Event,
         scan_requests: &mut Vec<oneshot::Sender<Result<Arc<Vec<ScanResult>>>>>,
-        select_request: &mut Option<oneshot::Sender<Result<SelectResult>>>,
+        select_request: &mut Option<SelectRequest>,
         broadcast_sender: &mut broadcast::Sender<Broadcast>,
     ) -> Result {
         match event {
@@ -135,7 +135,7 @@ impl WifiStation {
             Event::Connected => {
                 broadcast_sender.send(Broadcast::Connected)?;
                 if let Some(sender) = select_request.take() {
-                    let _ = sender.send(Ok(SelectResult::Success));
+                    sender.send(Ok(SelectResult::Success));
                 }
             }
             Event::Disconnected => {
@@ -144,13 +144,13 @@ impl WifiStation {
             Event::NetworkNotFound => {
                 broadcast_sender.send(Broadcast::NetworkNotFound)?;
                 if let Some(sender) = select_request.take() {
-                    let _ = sender.send(Ok(SelectResult::NotFound));
+                    sender.send(Ok(SelectResult::NotFound));
                 }
             }
             Event::WrongPsk => {
                 broadcast_sender.send(Broadcast::WrongPsk)?;
                 if let Some(sender) = select_request.take() {
-                    let _ = sender.send(Ok(SelectResult::WrongPsk));
+                    sender.send(Ok(SelectResult::WrongPsk));
                 }
             }
         }
@@ -162,7 +162,7 @@ impl WifiStation {
         socket_handle: &mut SocketHandle<N>,
         request: Request,
         scan_requests: &mut Vec<oneshot::Sender<Result<Arc<Vec<ScanResult>>>>>,
-        select_request: &mut Option<oneshot::Sender<Result<SelectResult>>>,
+        select_request: &mut Option<SelectRequest>,
     ) -> Result {
         debug!("Handling request: {request:?}");
         match request {
@@ -260,18 +260,41 @@ impl WifiStation {
                     }
                 };
                 if let Some(response_sender) = response_sender {
-                    *select_request = Some(response_sender);
-                    // Setup a timeout in case we don't catch a valid select response.
-                    let timeout = self.select_timeout;
-                    let sender = self.self_sender.clone();
-                    tokio::task::spawn(async move {
-                        tokio::time::sleep(timeout).await;
-                        let _ = sender.send(Request::SelectTimeout).await;
-                    });
+                    *select_request = Some(SelectRequest::new(
+                        self.self_sender.clone(),
+                        response_sender,
+                        self.select_timeout,
+                    ));
                 }
             }
             Request::Shutdown => (), //shutdown is handled at the scope above
         }
         Ok(())
+    }
+}
+
+struct SelectRequest {
+    response: oneshot::Sender<Result<SelectResult>>,
+    timeout: tokio::task::JoinHandle<()>,
+}
+
+impl SelectRequest {
+    fn new(
+        sender: mpsc::Sender<Request>,
+        response: oneshot::Sender<Result<SelectResult>>,
+        timeout: Duration,
+    ) -> Self {
+        Self {
+            response,
+            timeout: tokio::task::spawn(async move {
+                tokio::time::sleep(timeout).await;
+                let _ = sender.send(Request::SelectTimeout).await;
+            }),
+        }
+    }
+
+    fn send(self, result: Result<SelectResult>) {
+        self.timeout.abort();
+        let _ = self.response.send(result);
     }
 }
