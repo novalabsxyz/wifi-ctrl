@@ -49,7 +49,6 @@ impl EventSocket {
 
     pub(crate) async fn run(mut self) -> Result {
         info!("wpa_ctrl attempting attach");
-
         self.socket_handle.socket.send(b"ATTACH").await?;
         loop {
             match self

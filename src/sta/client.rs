@@ -15,6 +15,7 @@ pub enum SelectResult {
     PendingSelect,
     InvalidNetworkId,
     Timeout,
+    AlreadyConnected,
 }
 
 use std::fmt;
@@ -28,6 +29,7 @@ impl fmt::Display for SelectResult {
             SelectResult::PendingSelect => "select_already_pending",
             SelectResult::InvalidNetworkId => "invalid_network_id",
             SelectResult::Timeout => "select_timeout",
+            SelectResult::AlreadyConnected => "already_connected",
         };
         write!(f, "{s}")
     }
