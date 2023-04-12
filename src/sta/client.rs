@@ -5,13 +5,16 @@ use super::*;
 pub type ScanResults = Arc<Vec<ScanResult>>;
 
 #[derive(Debug)]
-/// Result from selecting a network, including a success or a specific failure (eg: incorect psk)
+/// Result from selecting a network, including a success or a specific failure (eg: incorect psk).
+/// Timeout does not necessarily mean failure; it only means that we did not received a parseable response.
+/// It could be that some valid message isn't being parsed by the library.
 pub enum SelectResult {
     Success,
     WrongPsk,
     NotFound,
     PendingSelect,
     InvalidNetworkId,
+    Timeout,
 }
 
 use std::fmt;
@@ -24,6 +27,7 @@ impl fmt::Display for SelectResult {
             SelectResult::NotFound => "network_not_found",
             SelectResult::PendingSelect => "select_already_pending",
             SelectResult::InvalidNetworkId => "invalid_network_id",
+            SelectResult::Timeout => "select_timeout",
         };
         write!(f, "{s}")
     }
@@ -40,6 +44,7 @@ pub(crate) enum Request {
     RemoveNetwork(usize, oneshot::Sender<Result>),
     SelectNetwork(usize, oneshot::Sender<Result<SelectResult>>),
     Shutdown,
+    SelectTimeout,
 }
 
 impl ShutdownSignal for Request {
@@ -73,6 +78,7 @@ impl ShutdownSignal for Request {
                 let _ = response.send(Err(error::Error::StartupAborted));
             }
             Request::Shutdown => {}
+            Request::SelectTimeout => {}
         }
     }
 }

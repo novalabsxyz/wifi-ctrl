@@ -1,5 +1,7 @@
 use super::*;
 
+use tokio::time::Duration;
+
 mod types;
 pub use types::*;
 
@@ -25,6 +27,8 @@ pub struct WifiStation {
     broadcast_sender: broadcast::Sender<Broadcast>,
     /// Channel for sending requests to itself
     self_sender: mpsc::Sender<Request>,
+    /// Timeout duration in case no valid select response is received
+    select_timeout: Duration,
 }
 
 impl WifiStation {
@@ -92,7 +96,7 @@ impl WifiStation {
                 EventOrRequest::Request(request) => match request {
                     Some(Request::Shutdown) => return Ok(()),
                     Some(request) => {
-                        Self::handle_request(
+                        self.handle_request(
                             &mut socket_handle,
                             request,
                             &mut scan_requests,
@@ -160,6 +164,7 @@ impl WifiStation {
     }
 
     async fn handle_request<const N: usize>(
+        &self,
         socket_handle: &mut SocketHandle<N>,
         request: Request,
         scan_requests: &mut Vec<oneshot::Sender<Result<Arc<Vec<ScanResult>>>>>,
@@ -167,6 +172,13 @@ impl WifiStation {
     ) -> Result {
         debug!("Handling request: {request:?}");
         match request {
+            Request::SelectTimeout => {
+                if let Some(sender) = select_request.take() {
+                    sender
+                        .send(Ok(SelectResult::NotFound))
+                        .map_err(|_| error::Error::WifiSelect)?;
+                }
+            }
             Request::Scan(response_channel) => {
                 scan_requests.push(response_channel);
                 if let Err(e) = socket_handle.command(b"SCAN").await {
@@ -261,6 +273,13 @@ impl WifiStation {
                 };
                 if let Some(response_sender) = response_sender {
                     *select_request = Some(response_sender);
+                    // Setup a timeout in case we don't catch a valid select response.
+                    let timeout = self.select_timeout;
+                    let sender = self.self_sender.clone();
+                    tokio::task::spawn(async move {
+                        tokio::time::sleep(timeout).await;
+                        let _ = sender.send(Request::SelectTimeout).await;
+                    });
                 }
             }
             Request::Shutdown => (), //shutdown is handled at the scope above
