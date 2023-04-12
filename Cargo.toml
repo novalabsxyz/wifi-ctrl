@@ -18,5 +18,8 @@ tempfile = "3"
 tokio = { version = "1", default-features = false, features = ["net",  "rt", "sync", "macros", "time"] }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["rt-multi-thread"] }
 env_logger = "0"
+network-interface = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "io-std", "io-util"] }
+tokio-util  ={ version = "0", features = ["codec"] }
+futures = "0"

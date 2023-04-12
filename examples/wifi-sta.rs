@@ -1,12 +1,21 @@
 use env_logger::Env;
 use log::{error, info};
 use wifi_ctrl::{sta, Result};
+use network_interface::{ NetworkInterface,NetworkInterfaceConfig};
+use tokio::io;
 
 #[tokio::main]
 async fn main() -> Result {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     info!("Starting wifi-sta example");
 
+    let mut network_interfaces = NetworkInterface::show().unwrap();
+    network_interfaces.sort_by(|a,b| a.index.cmp(&b.index));
+    for itf in network_interfaces.iter() {
+        info!("[{:?}] {:?}", itf.index, itf.name);
+    }
+    let user_input = read_until_break().await;
+    println!("{user_input}");
     let mut setup = sta::WifiSetup::new()?;
     // Use something like ifconfig to figure out the name of your WiFi interface
     setup.set_socket_path("/var/run/wpa_supplicant/wlp2s0");
@@ -50,4 +59,14 @@ async fn broadcast_listener(mut broadcast_receiver: sta::BroadcastReceiver) -> R
         info!("Broadcast: {:?}", broadcast);
     }
     Ok(())
+}
+
+
+async fn read_until_break(
+) -> String {
+    use tokio_util::codec::{FramedRead, LinesCodec};
+    use futures::stream::StreamExt;
+    let stdin = io::stdin();
+    let mut reader = FramedRead::new(stdin, LinesCodec::new());
+    reader.next().await.unwrap().unwrap()
 }
