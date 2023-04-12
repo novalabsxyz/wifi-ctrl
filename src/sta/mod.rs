@@ -168,7 +168,7 @@ impl WifiStation {
         match request {
             Request::SelectTimeout => {
                 if let Some(sender) = select_request.take() {
-                    let _ = sender.send(Ok(SelectResult::NotFound));
+                    let _ = sender.send(Ok(SelectResult::Timeout));
                 }
             }
             Request::Scan(response_channel) => {
