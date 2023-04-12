@@ -157,6 +157,13 @@ impl WifiStation {
         Ok(())
     }
 
+    async fn get_status<const N: usize>(socket_handle: &mut SocketHandle<N>) -> Result<Status> {
+        let _n = socket_handle.socket.send(b"STATUS").await?;
+        let n = socket_handle.socket.recv(&mut socket_handle.buffer).await?;
+        let data_str = std::str::from_utf8(&socket_handle.buffer[..n])?.trim_end();
+        parse_status(data_str)
+    }
+
     async fn handle_request<const N: usize>(
         &self,
         socket_handle: &mut SocketHandle<N>,
@@ -168,7 +175,7 @@ impl WifiStation {
         match request {
             Request::SelectTimeout => {
                 if let Some(sender) = select_request.take() {
-                    let _ = sender.send(Ok(SelectResult::Timeout));
+                    sender.send(Ok(SelectResult::Timeout));
                 }
             }
             Request::Scan(response_channel) => {
@@ -188,10 +195,7 @@ impl WifiStation {
                 }
             }
             Request::Status(response_channel) => {
-                let _n = socket_handle.socket.send(b"STATUS").await?;
-                let n = socket_handle.socket.recv(&mut socket_handle.buffer).await?;
-                let data_str = std::str::from_utf8(&socket_handle.buffer[..n])?.trim_end();
-                let status = parse_status(data_str);
+                let status = Self::get_status(socket_handle).await;
                 if response_channel.send(status).is_err() {
                     error!("Scan request response channel closed before response sent");
                 }
@@ -249,7 +253,18 @@ impl WifiStation {
                             None
                         } else {
                             debug!("wpa_ctrl selected network {id}");
-                            Some(response_sender)
+                            let status = Self::get_status(socket_handle).await?;
+                            if let Some(current_id) = status.get("id") {
+                                if current_id == &id.to_string() {
+                                    let _ =
+                                        response_sender.send(Ok(SelectResult::AlreadyConnected));
+                                    None
+                                } else {
+                                    Some(response_sender)
+                                }
+                            } else {
+                                Some(response_sender)
+                            }
                         }
                     }
                     Some(_) => {
