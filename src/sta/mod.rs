@@ -135,9 +135,7 @@ impl WifiStation {
             Event::Connected => {
                 broadcast_sender.send(Broadcast::Connected)?;
                 if let Some(sender) = select_request.take() {
-                    sender
-                        .send(Ok(SelectResult::Success))
-                        .map_err(|_| error::Error::WifiSelect)?;
+                    let _ = sender.send(Ok(SelectResult::Success));
                 }
             }
             Event::Disconnected => {
@@ -146,17 +144,13 @@ impl WifiStation {
             Event::NetworkNotFound => {
                 broadcast_sender.send(Broadcast::NetworkNotFound)?;
                 if let Some(sender) = select_request.take() {
-                    sender
-                        .send(Ok(SelectResult::NotFound))
-                        .map_err(|_| error::Error::WifiSelect)?;
+                    let _ = sender.send(Ok(SelectResult::NotFound));
                 }
             }
             Event::WrongPsk => {
                 broadcast_sender.send(Broadcast::WrongPsk)?;
                 if let Some(sender) = select_request.take() {
-                    sender
-                        .send(Ok(SelectResult::WrongPsk))
-                        .map_err(|_| error::Error::WifiSelect)?;
+                    let _ = sender.send(Ok(SelectResult::WrongPsk));
                 }
             }
         }
@@ -174,9 +168,7 @@ impl WifiStation {
         match request {
             Request::SelectTimeout => {
                 if let Some(sender) = select_request.take() {
-                    sender
-                        .send(Ok(SelectResult::NotFound))
-                        .map_err(|_| error::Error::WifiSelect)?;
+                    let _ = sender.send(Ok(SelectResult::NotFound));
                 }
             }
             Request::Scan(response_channel) => {
@@ -253,9 +245,7 @@ impl WifiStation {
                         let bytes = cmd.into_bytes();
                         if let Err(e) = socket_handle.command(&bytes).await {
                             warn!("Error while selecting network {id}: {e}");
-                            response_sender
-                                .send(Ok(SelectResult::InvalidNetworkId))
-                                .map_err(|_| error::Error::WifiSelect)?;
+                            let _ = response_sender.send(Ok(SelectResult::InvalidNetworkId));
                             None
                         } else {
                             debug!("wpa_ctrl selected network {id}");
@@ -264,9 +254,7 @@ impl WifiStation {
                     }
                     Some(_) => {
                         warn!("Select request already pending! Dropping this one.");
-                        response_sender
-                            .send(Ok(SelectResult::PendingSelect))
-                            .map_err(|_| error::Error::WifiSelect)?;
+                        let _ = response_sender.send(Ok(SelectResult::PendingSelect));
                         debug!("wpa_ctrl removed network {id}");
                         None
                     }
