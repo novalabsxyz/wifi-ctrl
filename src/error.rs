@@ -35,8 +35,6 @@ pub enum Error {
     WifiApBroadcast(#[from] broadcast::error::SendError<ap::Broadcast>),
     #[error("wifi::sta broadcast: {0}")]
     WifiStaBroadcast(#[from] broadcast::error::SendError<sta::Broadcast>),
-    #[error("wifi sta select result")]
-    WifiSelect,
     #[error("timeout opening socket {0}")]
     TimeoutOpeningSocket(String),
     #[error("permission denied opening socket {0}")]
