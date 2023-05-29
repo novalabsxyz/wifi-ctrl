@@ -89,6 +89,26 @@ impl ShutdownSignal for Request {
 pub(crate) enum SetNetwork {
     Ssid(String),
     Psk(String),
+    KeyMgmt(KeyMgmt),
+}
+
+#[derive(Debug)]
+pub enum KeyMgmt {
+    None,
+    WpaPsk,
+    WpaEap,
+    IEEE8021X,
+}
+
+impl ToString for KeyMgmt {
+    fn to_string(&self) -> String {
+        match self {
+            KeyMgmt::None => "NONE".to_string(),
+            KeyMgmt::WpaPsk => "WPA-PSK".to_string(),
+            KeyMgmt::WpaEap => "WPA-EAP".to_string(),
+            KeyMgmt::IEEE8021X => "IEEE8021X".to_string(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -136,7 +156,6 @@ impl RequestClient {
 
     pub async fn set_network_psk(&self, network_id: usize, psk: String) -> Result {
         let (response, request) = oneshot::channel();
-
         self.send_request(Request::SetNetwork(
             network_id,
             SetNetwork::Psk(psk),
@@ -157,9 +176,19 @@ impl RequestClient {
         request.await?
     }
 
+    pub async fn set_network_keymgmt(&self, network_id: usize, mgmt: KeyMgmt) -> Result {
+        let (response, request) = oneshot::channel();
+        self.send_request(Request::SetNetwork(
+            network_id,
+            SetNetwork::KeyMgmt(mgmt),
+            response,
+        ))
+            .await?;
+        request.await?
+    }
+
     pub async fn save_config(&self) -> Result {
         let (response, request) = oneshot::channel();
-
         self.send_request(Request::SaveConfig(response)).await?;
         request.await?
     }
