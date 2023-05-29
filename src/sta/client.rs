@@ -183,7 +183,7 @@ impl RequestClient {
             SetNetwork::KeyMgmt(mgmt),
             response,
         ))
-            .await?;
+        .await?;
         request.await?
     }
 
