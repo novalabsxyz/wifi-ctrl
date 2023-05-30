@@ -92,25 +92,6 @@ pub(crate) enum SetNetwork {
     KeyMgmt(KeyMgmt),
 }
 
-#[derive(Debug)]
-pub enum KeyMgmt {
-    None,
-    WpaPsk,
-    WpaEap,
-    IEEE8021X,
-}
-
-impl ToString for KeyMgmt {
-    fn to_string(&self) -> String {
-        match self {
-            KeyMgmt::None => "NONE".to_string(),
-            KeyMgmt::WpaPsk => "WPA-PSK".to_string(),
-            KeyMgmt::WpaEap => "WPA-EAP".to_string(),
-            KeyMgmt::IEEE8021X => "IEEE8021X".to_string(),
-        }
-    }
-}
-
 #[derive(Clone)]
 /// Request client wraps the request events, awaiting oneshot channels when appropriate
 pub struct RequestClient {

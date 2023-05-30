@@ -113,3 +113,25 @@ pub(crate) fn parse_status(response: &str) -> Result<Status> {
         })?;
     Ok(config.try_deserialize::<HashMap<String, String>>().unwrap())
 }
+
+#[derive(Debug)]
+/// Key management types for WiFi networks (eg: WPA-PSK, WPA-EAP, etc). In theory, more than one may
+/// be configured, but I believe `wpa_supplicant` defaults to all of them if omitted. Therefore, in
+/// practice, this is mostly important for setting `key_mgmt` to `None` for an open network.
+pub enum KeyMgmt {
+    None,
+    WpaPsk,
+    WpaEap,
+    IEEE8021X,
+}
+
+impl ToString for KeyMgmt {
+    fn to_string(&self) -> String {
+        match self {
+            KeyMgmt::None => "NONE".to_string(),
+            KeyMgmt::WpaPsk => "WPA-PSK".to_string(),
+            KeyMgmt::WpaEap => "WPA-EAP".to_string(),
+            KeyMgmt::IEEE8021X => "IEEE8021X".to_string(),
+        }
+    }
+}

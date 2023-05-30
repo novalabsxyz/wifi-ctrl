@@ -51,7 +51,7 @@ impl Status {
     }
 }
 
-// Configuration of the WiFi station
+/// Configuration of the WiFi station
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub bssid: String,
