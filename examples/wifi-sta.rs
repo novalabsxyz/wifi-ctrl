@@ -1,5 +1,7 @@
 use env_logger::Env;
 use log::{error, info};
+use network_interface::{NetworkInterface, NetworkInterfaceConfig};
+use tokio::io;
 use wifi_ctrl::{sta, Result};
 
 #[tokio::main]
@@ -7,9 +9,24 @@ async fn main() -> Result {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     info!("Starting wifi-sta example");
 
+    let mut network_interfaces = NetworkInterface::show().unwrap();
+    network_interfaces.sort_by(|a, b| a.index.cmp(&b.index));
+    for (i, itf) in network_interfaces.iter().enumerate() {
+        info!("[{:?}] {:?}", i, itf.name);
+    }
+    let user_input = read_until_break().await;
+    let index = user_input.trim().parse::<usize>()?;
     let mut setup = sta::WifiSetup::new()?;
-    // Use something like ifconfig to figure out the name of your WiFi interface
-    setup.set_socket_path("/var/run/wpa_supplicant/wlp2s0");
+
+    let proposed_path = format!("/var/run/wpa_supplicant/{}", network_interfaces[index].name);
+    info!("Connect to \"{proposed_path}\"? Type full new path or just press enter to accept.");
+
+    let user_input = read_until_break().await;
+    if user_input.trim().len() == 0 {
+        setup.set_socket_path(proposed_path);
+    } else {
+        setup.set_socket_path(user_input.trim().to_string());
+    }
 
     let broadcast = setup.get_broadcast_receiver();
     let requester = setup.get_request_client();
@@ -50,4 +67,12 @@ async fn broadcast_listener(mut broadcast_receiver: sta::BroadcastReceiver) -> R
         info!("Broadcast: {:?}", broadcast);
     }
     Ok(())
+}
+
+async fn read_until_break() -> String {
+    use futures::stream::StreamExt;
+    use tokio_util::codec::{FramedRead, LinesCodec};
+    let stdin = io::stdin();
+    let mut reader = FramedRead::new(stdin, LinesCodec::new());
+    reader.next().await.unwrap().unwrap()
 }
