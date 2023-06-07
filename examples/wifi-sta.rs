@@ -1,8 +1,8 @@
 use env_logger::Env;
 use log::{error, info};
-use wifi_ctrl::{sta, Result};
-use network_interface::{ NetworkInterface,NetworkInterfaceConfig};
+use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 use tokio::io;
+use wifi_ctrl::{sta, Result};
 
 #[tokio::main]
 async fn main() -> Result {
@@ -10,7 +10,7 @@ async fn main() -> Result {
     info!("Starting wifi-sta example");
 
     let mut network_interfaces = NetworkInterface::show().unwrap();
-    network_interfaces.sort_by(|a,b| a.index.cmp(&b.index));
+    network_interfaces.sort_by(|a, b| a.index.cmp(&b.index));
     for (i, itf) in network_interfaces.iter().enumerate() {
         info!("[{:?}] {:?}", i, itf.name);
     }
@@ -20,7 +20,7 @@ async fn main() -> Result {
 
     let proposed_path = format!("/var/run/wpa_supplicant/{}", network_interfaces[index].name);
     info!("Connect to \"{proposed_path}\"? Type full new path or just press enter to accept.");
-    
+
     let user_input = read_until_break().await;
     if user_input.trim().len() == 0 {
         setup.set_socket_path(proposed_path);
@@ -69,11 +69,9 @@ async fn broadcast_listener(mut broadcast_receiver: sta::BroadcastReceiver) -> R
     Ok(())
 }
 
-
-async fn read_until_break(
-) -> String {
-    use tokio_util::codec::{FramedRead, LinesCodec};
+async fn read_until_break() -> String {
     use futures::stream::StreamExt;
+    use tokio_util::codec::{FramedRead, LinesCodec};
     let stdin = io::stdin();
     let mut reader = FramedRead::new(stdin, LinesCodec::new());
     reader.next().await.unwrap().unwrap()
