@@ -11,14 +11,15 @@ async fn main() -> Result {
 
     let mut network_interfaces = NetworkInterface::show().unwrap();
     network_interfaces.sort_by(|a,b| a.index.cmp(&b.index));
-    for itf in network_interfaces.iter() {
-        info!("[{:?}] {:?}", itf.index, itf.name);
+    for (i, itf) in network_interfaces.iter().enumerate() {
+        info!("[{:?}] {:?}", i, itf.name);
     }
     let user_input = read_until_break().await;
-    println!("{user_input}");
+    let index = user_input.trim().parse::<usize>()?;
     let mut setup = sta::WifiSetup::new()?;
+
     // Use something like ifconfig to figure out the name of your WiFi interface
-    setup.set_socket_path("/var/run/wpa_supplicant/wlp2s0");
+    setup.set_socket_path(format!("/var/run/wpa_supplicant/{}", network_interfaces[index].name));
 
     let broadcast = setup.get_broadcast_receiver();
     let requester = setup.get_request_client();
