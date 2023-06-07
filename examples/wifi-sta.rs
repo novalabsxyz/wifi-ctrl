@@ -18,8 +18,15 @@ async fn main() -> Result {
     let index = user_input.trim().parse::<usize>()?;
     let mut setup = sta::WifiSetup::new()?;
 
-    // Use something like ifconfig to figure out the name of your WiFi interface
-    setup.set_socket_path(format!("/var/run/wpa_supplicant/{}", network_interfaces[index].name));
+    let proposed_path = format!("/var/run/wpa_supplicant/{}", network_interfaces[index].name);
+    info!("Connect to \"{proposed_path}\"? Type full new path or just press enter to accept.");
+    
+    let user_input = read_until_break().await;
+    if user_input.trim().len() == 0 {
+        setup.set_socket_path(proposed_path);
+    } else {
+        setup.set_socket_path(user_input.trim().to_string());
+    }
 
     let broadcast = setup.get_broadcast_receiver();
     let requester = setup.get_request_client();
