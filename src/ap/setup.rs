@@ -26,6 +26,7 @@ impl<const C: usize, const B: usize> WifiSetupGeneric<C, B> {
         Ok(Self {
             wifi: WifiAp {
                 socket_path: PATH_DEFAULT_SERVER.into(),
+                attach_options: vec![],
                 request_receiver,
                 broadcast_sender,
                 self_sender,
@@ -37,6 +38,12 @@ impl<const C: usize, const B: usize> WifiSetupGeneric<C, B> {
 
     pub fn set_socket_path<S: Into<std::path::PathBuf>>(&mut self, path: S) {
         self.wifi.socket_path = path.into();
+    }
+
+    pub fn add_attach_options(&mut self, options: &[&str]) {
+        for o in options {
+            self.wifi.attach_options.push(o.to_string());
+        }
     }
 
     pub fn get_broadcast_receiver(&self) -> BroadcastReceiver {

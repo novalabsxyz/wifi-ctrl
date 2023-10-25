@@ -2,12 +2,12 @@ use env_logger::Env;
 use log::{error, info};
 use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 use tokio::io;
-use wifi_ctrl::{sta, Result};
+use wifi_ctrl::{ap, Result};
 
 #[tokio::main]
 async fn main() -> Result {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-    info!("Starting wifi-sta example");
+    info!("Starting wifi-ap example");
 
     let mut network_interfaces = NetworkInterface::show().unwrap();
     network_interfaces.sort_by(|a, b| a.index.cmp(&b.index));
@@ -16,7 +16,7 @@ async fn main() -> Result {
     }
     let user_input = read_until_break().await;
     let index = user_input.trim().parse::<usize>()?;
-    let mut setup = sta::WifiSetup::new()?;
+    let mut setup = ap::WifiSetup::new()?;
 
     let proposed_path = format!("/var/run/hostapd/{}", network_interfaces[index].name);
     info!("Connect to \"{proposed_path}\"? Type full new path or just press enter to accept.");
@@ -27,7 +27,7 @@ async fn main() -> Result {
     } else {
         setup.set_socket_path(user_input.trim().to_string());
     }
-
+    
     let broadcast = setup.get_broadcast_receiver();
     let requester = setup.get_request_client();
     let runtime = setup.complete();
@@ -44,25 +44,11 @@ async fn main() -> Result {
     Ok(())
 }
 
-async fn app(requester: sta::RequestClient) -> Result {
-    info!("Requesting scan");
-    let scan = requester.get_scan().await?;
-    info!("Scan complete");
-    for scan in scan.iter() {
-        info!("   {:?}", scan);
-    }
-
-    let networks = requester.get_networks().await?;
-    info!("Known networks");
-    for networks in networks.iter() {
-        info!("   {:?}", networks);
-    }
-    info!("Shutting down");
-    requester.shutdown().await?;
+async fn app(_: ap::RequestClient) -> Result {
     Ok(())
 }
 
-async fn broadcast_listener(mut broadcast_receiver: sta::BroadcastReceiver) -> Result {
+async fn broadcast_listener(mut broadcast_receiver: ap::BroadcastReceiver) -> Result {
     while let Ok(broadcast) = broadcast_receiver.recv().await {
         info!("Broadcast: {:?}", broadcast);
     }

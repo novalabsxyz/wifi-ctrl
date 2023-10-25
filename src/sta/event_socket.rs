@@ -26,7 +26,7 @@ impl EventSocket {
         P: AsRef<std::path::Path> + std::fmt::Debug,
     {
         let (socket_handle, deferred_requests) =
-            SocketHandle::open(socket, "mapper_wpa_ctrl_async.sock", request_receiver).await?;
+            SocketHandle::open(socket, "wpa_ctrl_async.sock", request_receiver).await?;
         // setup the channel for client requests
         let (sender, receiver) = mpsc::channel(32);
         Ok((

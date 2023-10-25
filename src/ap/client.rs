@@ -94,6 +94,7 @@ pub enum Broadcast {
     Ready,
     Connected(String),
     Disconnected(String),
+    UnknownEvent(String),
 }
 
 /// Channel for broadcasting events.
