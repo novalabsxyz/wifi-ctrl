@@ -18,6 +18,8 @@ const PATH_DEFAULT_SERVER: &str = "/var/run/hostapd/wlan1";
 pub struct WifiAp {
     /// Path to the socket
     socket_path: std::path::PathBuf,
+    /// Options to pass to the hostapd attach command
+    attach_options: Vec<String>,
     /// Channel for receiving requests
     request_receiver: mpsc::Receiver<Request>,
     #[allow(unused)]
@@ -30,8 +32,12 @@ pub struct WifiAp {
 impl WifiAp {
     pub async fn run(mut self) -> Result {
         info!("Starting Wifi AP process");
-        let (event_receiver, mut deferred_requests, event_socket) =
-            EventSocket::new(&self.socket_path, &mut self.request_receiver).await?;
+        let (event_receiver, mut deferred_requests, event_socket) = EventSocket::new(
+            &self.socket_path,
+            &mut self.request_receiver,
+            &self.attach_options,
+        )
+        .await?;
         // We start up a separate socket for receiving the "unexpected" events that
         // gets forwarded to us via the event_receiver
         let (socket_handle, next_deferred_requests) = SocketHandle::open(
@@ -90,12 +96,17 @@ impl WifiAp {
     ) -> Result {
         match event_msg {
             Event::ApStaConnected(mac) => {
-                if let Err(e) = broadcast_sender.send(client::Broadcast::Connected(mac)) {
+                if let Err(e) = broadcast_sender.send(Broadcast::Connected(mac)) {
                     warn!("error broadcasting: {e}");
                 }
             }
             Event::ApStaDisconnected(mac) => {
-                if let Err(e) = broadcast_sender.send(client::Broadcast::Disconnected(mac)) {
+                if let Err(e) = broadcast_sender.send(Broadcast::Disconnected(mac)) {
+                    warn!("error broadcasting: {e}");
+                }
+            }
+            Event::Unknown(msg) => {
+                if let Err(e) = broadcast_sender.send(Broadcast::UnknownEvent(msg)) {
                     warn!("error broadcasting: {e}");
                 }
             }
