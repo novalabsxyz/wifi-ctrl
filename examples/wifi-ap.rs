@@ -1,3 +1,4 @@
+#![allow(clippy::result_large_err)]
 use env_logger::Env;
 use log::{error, info};
 use network_interface::{NetworkInterface, NetworkInterfaceConfig};
@@ -22,12 +23,12 @@ async fn main() -> Result {
     info!("Connect to \"{proposed_path}\"? Type full new path or just press enter to accept.");
 
     let user_input = read_until_break().await;
-    if user_input.trim().len() == 0 {
+    if user_input.trim().is_empty() {
         setup.set_socket_path(proposed_path);
     } else {
         setup.set_socket_path(user_input.trim().to_string());
     }
-    
+
     let broadcast = setup.get_broadcast_receiver();
     let requester = setup.get_request_client();
     let runtime = setup.complete();

@@ -20,7 +20,7 @@ impl EventSocket {
     pub(crate) async fn new<P>(
         socket: P,
         request_receiver: &mut mpsc::Receiver<Request>,
-        attach_options: &Vec<String>,
+        attach_options: &[String],
     ) -> Result<(EventReceiver, Vec<Request>, Self)>
     where
         P: AsRef<std::path::Path> + std::fmt::Debug,
@@ -36,7 +36,7 @@ impl EventSocket {
             Self {
                 socket_handle,
                 sender,
-                attach_options: attach_options.clone(),
+                attach_options: attach_options.to_vec(),
             },
         ))
     }
@@ -50,10 +50,9 @@ impl EventSocket {
     }
 
     pub(crate) async fn run(mut self) -> Result {
-        info!("Run!");
         let mut command = "ATTACH".to_string();
         for o in &self.attach_options {
-            command.push_str(" ");
+            command.push(' ');
             command.push_str(o);
         }
         let mut attach = self.socket_handle.command(command.as_bytes()).await;

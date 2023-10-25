@@ -1,3 +1,4 @@
+#![allow(clippy::result_large_err)]
 use env_logger::Env;
 use log::{error, info};
 use network_interface::{NetworkInterface, NetworkInterfaceConfig};
@@ -18,11 +19,11 @@ async fn main() -> Result {
     let index = user_input.trim().parse::<usize>()?;
     let mut setup = sta::WifiSetup::new()?;
 
-    let proposed_path = format!("/var/run/hostapd/{}", network_interfaces[index].name);
+    let proposed_path = format!("/var/run/wpa_supplicant/{}", network_interfaces[index].name);
     info!("Connect to \"{proposed_path}\"? Type full new path or just press enter to accept.");
 
     let user_input = read_until_break().await;
-    if user_input.trim().len() == 0 {
+    if user_input.trim().is_empty() {
         setup.set_socket_path(proposed_path);
     } else {
         setup.set_socket_path(user_input.trim().to_string());
