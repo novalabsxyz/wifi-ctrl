@@ -1,7 +1,7 @@
 use super::*;
 
 pub(crate) struct EventSocket {
-    socket_handle: SocketHandle<256>,
+    socket_handle: SocketHandle<1024>,
     attach_options: Vec<String>,
     /// Sends messages to client
     sender: mpsc::Sender<Event>,
