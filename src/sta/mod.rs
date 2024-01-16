@@ -243,6 +243,13 @@ impl WifiStation {
                 debug!("wpa_ctrl removed network {id}");
                 let _ = response.send(Ok(()));
             }
+            Request::RemoveAllNetworks(response) => {
+                if let Err(e) = socket_handle.command(b"REMOVE_NETWORK all").await {
+                    warn!("Error while removing network all: {e}");
+                }
+                debug!("wpa_ctrl removed network all");
+                let _ = response.send(Ok(()));
+            }
             Request::SelectNetwork(id, response_sender) => {
                 let response_sender = match select_request {
                     None => {
