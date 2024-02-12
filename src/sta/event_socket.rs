@@ -13,6 +13,7 @@ pub(crate) enum Event {
     Disconnected,
     NetworkNotFound,
     WrongPsk,
+    Unknown(String),
 }
 
 pub(crate) type EventReceiver = mpsc::Receiver<Event>;
@@ -62,20 +63,18 @@ impl EventSocket {
                     debug!("wpa_ctrl event: {data_str}");
                     if data_str.ends_with("CTRL-EVENT-SCAN-RESULTS") {
                         self.send_event(Event::ScanComplete).await?;
-                    }
-                    if data_str.contains("CTRL-EVENT-CONNECTED") {
+                    } else if data_str.contains("CTRL-EVENT-CONNECTED") {
                         self.send_event(Event::Connected).await?;
-                    }
-                    if data_str.contains("CTRL-EVENT-DISCONNECTED") {
+                    } else if data_str.contains("CTRL-EVENT-DISCONNECTED") {
                         self.send_event(Event::Disconnected).await?;
-                    }
-                    if data_str.contains("CTRL-EVENT-NETWORK-NOT-FOUND") {
+                    } else if data_str.contains("CTRL-EVENT-NETWORK-NOT-FOUND") {
                         self.send_event(Event::NetworkNotFound).await?;
-                    }
-                    if data_str.contains("CTRL-EVENT-SSID-TEMP-DISABLED")
+                    } else if data_str.contains("CTRL-EVENT-SSID-TEMP-DISABLED")
                         && data_str.contains("reason=WRONG_KEY")
                     {
                         self.send_event(Event::WrongPsk).await?;
+                    } else {
+                        self.send_event(Event::Unknown(data_str.into())).await?;
                     }
                 }
                 Err(e) => {

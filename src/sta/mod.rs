@@ -153,6 +153,9 @@ impl WifiStation {
                     sender.send(Ok(SelectResult::WrongPsk));
                 }
             }
+            Event::Unknown(msg) => {
+                broadcast_sender.send(Broadcast::Unknown(msg))?;
+            }
         }
         Ok(())
     }
