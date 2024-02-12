@@ -212,6 +212,7 @@ pub enum Broadcast {
     NetworkNotFound,
     WrongPsk,
     Ready,
+    Unknown(String),
 }
 
 /// Channel for broadcasting events. Subscribing to this channel is equivalent to
