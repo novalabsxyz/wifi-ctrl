@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Debug)]
 pub(crate) enum Request {
+    Custom(String, oneshot::Sender<Result<String>>),
     Status(oneshot::Sender<Result<Status>>),
     Config(oneshot::Sender<Result<Config>>),
     Enable(oneshot::Sender<Result>),
@@ -16,6 +17,9 @@ impl ShutdownSignal for Request {
     }
     fn inform_of_shutdown(self) {
         match self {
+            Request::Custom(_, response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
             Request::Status(response) => {
                 let _ = response.send(Err(error::Error::StartupAborted));
             }
@@ -50,6 +54,15 @@ impl RequestClient {
             .await
             .map_err(|_| error::Error::WifiApRequestChannelClosed)?;
         Ok(())
+    }
+
+    pub async fn send_custom(&self, custom: String) -> Result<String> {
+        let (response, request) = oneshot::channel();
+        self.sender
+            .send(Request::Custom(custom, response))
+            .await
+            .map_err(|_| error::Error::WifiApRequestChannelClosed)?;
+        request.await?
     }
 
     pub async fn get_status(&self) -> Result<Status> {
