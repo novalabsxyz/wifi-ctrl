@@ -37,6 +37,7 @@ impl fmt::Display for SelectResult {
 
 #[derive(Debug)]
 pub(crate) enum Request {
+    Custom(String, oneshot::Sender<Result<String>>),
     Status(oneshot::Sender<Result<Status>>),
     Networks(oneshot::Sender<Result<Vec<NetworkResult>>>),
     Scan(oneshot::Sender<Result<ScanResults>>),
@@ -55,6 +56,9 @@ impl ShutdownSignal for Request {
     }
     fn inform_of_shutdown(self) {
         match self {
+            Request::Custom(_, response) => {
+                let _ = response.send(Err(error::Error::StartupAborted));
+            }
             Request::Status(response) => {
                 let _ = response.send(Err(error::Error::StartupAborted));
             }
@@ -109,6 +113,12 @@ impl RequestClient {
             .await
             .map_err(|_| error::Error::WifiStationRequestChannelClosed)?;
         Ok(())
+    }
+
+    pub async fn send_custom(&self, custom: String) -> Result<String> {
+        let (response, request) = oneshot::channel();
+        self.send_request(Request::Custom(custom, response)).await?;
+        request.await?
     }
 
     pub async fn get_scan(&self) -> Result<Arc<Vec<ScanResult>>> {
