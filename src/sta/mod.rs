@@ -216,6 +216,7 @@ impl WifiStation {
                     "SET_NETWORK {id} {}",
                     match param {
                         SetNetwork::Ssid(ssid) => format!("ssid \"{ssid}\""),
+                        SetNetwork::Bssid(bssid) => format!("bssid \"{bssid}\""),
                         SetNetwork::Psk(psk) => format!("psk \"{psk}\""),
                         SetNetwork::KeyMgmt(mgmt) => format!("key_mgmt {}", mgmt.to_string()),
                     }
