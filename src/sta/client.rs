@@ -92,6 +92,7 @@ impl ShutdownSignal for Request {
 #[derive(Debug)]
 pub(crate) enum SetNetwork {
     Ssid(String),
+    Bssid(String),
     Psk(String),
     KeyMgmt(KeyMgmt),
 }
@@ -155,6 +156,17 @@ impl RequestClient {
         self.send_request(Request::SetNetwork(
             network_id,
             SetNetwork::Ssid(ssid),
+            response,
+        ))
+        .await?;
+        request.await?
+    }
+
+    pub async fn set_network_bssid(&self, network_id: usize, bssid: String) -> Result {
+        let (response, request) = oneshot::channel();
+        self.send_request(Request::SetNetwork(
+            network_id,
+            SetNetwork::Bssid(bssid),
             response,
         ))
         .await?;
