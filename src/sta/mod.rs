@@ -229,7 +229,7 @@ impl WifiStation {
                     match param {
                         SetNetwork::Ssid(ssid) => format!("ssid \"{ssid}\""),
                         SetNetwork::Psk(psk) => format!("psk \"{psk}\""),
-                        SetNetwork::KeyMgmt(mgmt) => format!("key_mgmt {}", mgmt.to_string()),
+                        SetNetwork::KeyMgmt(mgmt) => format!("key_mgmt {}", mgmt),
                     }
                 );
                 debug!("wpa_ctrl \"{cmd}\"");

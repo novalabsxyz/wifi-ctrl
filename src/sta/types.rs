@@ -1,6 +1,7 @@
 use super::{error, warn, Result};
 use serde::Serialize;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::str::FromStr;
 use tokio::net::UnixDatagram;
 
@@ -125,13 +126,14 @@ pub enum KeyMgmt {
     IEEE8021X,
 }
 
-impl ToString for KeyMgmt {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for KeyMgmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
             KeyMgmt::None => "NONE".to_string(),
             KeyMgmt::WpaPsk => "WPA-PSK".to_string(),
             KeyMgmt::WpaEap => "WPA-EAP".to_string(),
             KeyMgmt::IEEE8021X => "IEEE8021X".to_string(),
-        }
+        };
+        write!(f, "{}", str)
     }
 }
