@@ -36,6 +36,12 @@ impl fmt::Display for SelectResult {
 }
 
 #[derive(Debug)]
+pub enum RemoveNetwork {
+    Id(usize),
+    All,
+}
+
+#[derive(Debug)]
 pub(crate) enum Request {
     Custom(String, oneshot::Sender<Result<String>>),
     Status(oneshot::Sender<Result<Status>>),
@@ -44,8 +50,7 @@ pub(crate) enum Request {
     AddNetwork(oneshot::Sender<Result<usize>>),
     SetNetwork(usize, SetNetwork, oneshot::Sender<Result>),
     SaveConfig(oneshot::Sender<Result>),
-    RemoveNetwork(usize, oneshot::Sender<Result>),
-    RemoveAllNetworks(oneshot::Sender<Result>),
+    RemoveNetwork(RemoveNetwork, oneshot::Sender<Result>),
     SelectNetwork(usize, oneshot::Sender<Result<SelectResult>>),
     Shutdown,
     SelectTimeout,
@@ -79,9 +84,6 @@ impl ShutdownSignal for Request {
                 let _ = response.send(Err(error::Error::StartupAborted));
             }
             Request::RemoveNetwork(_, response) => {
-                let _ = response.send(Err(error::Error::StartupAborted));
-            }
-            Request::RemoveAllNetworks(response) => {
                 let _ = response.send(Err(error::Error::StartupAborted));
             }
             Request::SelectNetwork(_, response) => {
@@ -200,16 +202,9 @@ impl RequestClient {
         request.await?
     }
 
-    pub async fn remove_network(&self, network_id: usize) -> Result {
+    pub async fn remove_network(&self, remove_network: RemoveNetwork) -> Result {
         let (response, request) = oneshot::channel();
-        self.send_request(Request::RemoveNetwork(network_id, response))
-            .await?;
-        request.await?
-    }
-
-    pub async fn remove_all_networks(&self) -> Result {
-        let (response, request) = oneshot::channel();
-        self.send_request(Request::RemoveAllNetworks(response))
+        self.send_request(Request::RemoveNetwork(remove_network, response))
             .await?;
         request.await?
     }

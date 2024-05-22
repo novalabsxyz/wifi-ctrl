@@ -247,20 +247,17 @@ impl WifiStation {
                 debug!("wpa_ctrl config saved");
                 let _ = response.send(Ok(()));
             }
-            Request::RemoveNetwork(id, response) => {
-                let cmd = format!("REMOVE_NETWORK {id}");
+            Request::RemoveNetwork(remove_network, response) => {
+                let str = match remove_network {
+                    RemoveNetwork::All => "all".to_string(),
+                    RemoveNetwork::Id(id) => id.to_string(),
+                };
+                let cmd = format!("REMOVE_NETWORK {str}");
                 let bytes = cmd.into_bytes();
                 if let Err(e) = socket_handle.command(&bytes).await {
-                    warn!("Error while removing network {id}: {e}");
+                    warn!("Error while removing network {str}: {e}");
                 }
-                debug!("wpa_ctrl removed network {id}");
-                let _ = response.send(Ok(()));
-            }
-            Request::RemoveAllNetworks(response) => {
-                if let Err(e) = socket_handle.command(b"REMOVE_NETWORK all").await {
-                    warn!("Error while removing network all: {e}");
-                }
-                debug!("wpa_ctrl removed network all");
+                debug!("wpa_ctrl removed network {str}");
                 let _ = response.send(Ok(()));
             }
             Request::SelectNetwork(id, response_sender) => {
